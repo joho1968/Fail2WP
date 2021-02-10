@@ -44,7 +44,7 @@ This section describes how to install the plugin and get it working.
 
 Fail2WP uses standard WordPress functionality to handle localization/locale. The native language localization of the plugin is English. It has been translated to Swedish by the author.
 
-All logging to system logs (i.e. `php.log` or 'auth.log') is done in English.
+All logging to system logs (i.e. `php.log` or `auth.log`) is done in English.
 
 ### Are there any incompatibilities
 
