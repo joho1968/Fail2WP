@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fail2wp 1.0.0\n"
+"Project-Id-Version: fail2wp 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-03 10:24+0100\n"
+"POT-Creation-Date: 2021-03-08 15:28+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Joaquim Homrighausen <joho@webbplatsen.se>\n"
 "Language-Team: SWEDISH <joho@webbplatsen.se>\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Unknown"
 msgstr "Okänd"
 
-#: fail2wp.php:240 fail2wp.php:245
+#: fail2wp.php:240 fail2wp.php:245 fail2wp.php:1011 fail2wp.php:1016
 msgid "Unknown role"
 msgstr "Okänd roll"
 
@@ -33,7 +33,7 @@ msgstr ""
 "Tillhandahåller autentiseringsloggning och säkerhetsfunktioner för "
 "WordPress, användbar tillsammans med Fail2ban"
 
-#: fail2wp.php:289
+#: fail2wp.php:289 fail2wp.php:1060
 msgid "Basic configuration"
 msgstr "Baskonfiguration"
 
@@ -41,47 +41,47 @@ msgstr "Baskonfiguration"
 msgid "Logging"
 msgstr "Loggning"
 
-#: fail2wp.php:295
+#: fail2wp.php:295 fail2wp.php:1072
 msgid "Advanced"
 msgstr "Avancerat"
 
-#: fail2wp.php:298
+#: fail2wp.php:298 fail2wp.php:1075
 msgid "Cloudflare"
 msgstr "Cloudflare"
 
-#: fail2wp.php:301
+#: fail2wp.php:301 fail2wp.php:1081
 msgid "About"
 msgstr "Om"
 
-#: fail2wp.php:307
+#: fail2wp.php:307 fail2wp.php:1086
 msgid ""
 "One or more of openlog(), closelog(), and/or syslog() seem to be missing on "
 "this system"
 msgstr ""
-"En eller flera av openlog(), closelog(), och/eller syslog() verkar saknas "
-"på detta system"
+"En eller flera av openlog(), closelog(), och/eller syslog() verkar saknas på "
+"detta system"
 
-#: fail2wp.php:355
+#: fail2wp.php:355 fail2wp.php:1343
 msgid "Thank you for installing"
 msgstr "Tack för att du installerat"
 
-#: fail2wp.php:356
+#: fail2wp.php:356 fail2wp.php:1344
 msgid ""
-"This plugin provides security functions and integration between "
-"WordPress and"
+"This plugin provides security functions and integration between WordPress and"
 msgstr ""
-"Detta plugin tillhandahåller säkerhetsfunktioner samt integration "
-"mellan WordPress och"
+"Detta plugin tillhandahåller säkerhetsfunktioner samt integration mellan "
+"WordPress och"
 
-#: fail2wp.php:360
+#: fail2wp.php:360 fail2wp.php:1348
 msgid "Commercial support and customizations for this plugin is available from"
-msgstr "Kommersiell support och anpassningar av detta tillägg tillhandahålls av"
+msgstr ""
+"Kommersiell support och anpassningar av detta tillägg tillhandahålls av"
 
-#: fail2wp.php:362
+#: fail2wp.php:362 fail2wp.php:1350
 msgid "in Stockholm, Sweden. We speak Swedish and English"
 msgstr "i Stockholm. Vi pratar svenska och engelska"
 
-#: fail2wp.php:364
+#: fail2wp.php:364 fail2wp.php:1352
 msgid ""
 "The plugin is written by Joaquim Homrighausen and sponsored by WebbPlatsen i "
 "Sverige AB."
@@ -89,7 +89,7 @@ msgstr ""
 "Detta tillägg är utvecklat av Joaquim Homrighausen och sponsrat av "
 "WebbPlatsen i Sverige AB."
 
-#: fail2wp.php:365
+#: fail2wp.php:365 fail2wp.php:1353
 msgid ""
 "If you find this plugin useful, the author is happy to receive a donation, "
 "good review, or just a kind word."
@@ -97,7 +97,7 @@ msgstr ""
 "Om du tycker detta tillägg är användbart så uppskattar utvecklaren en "
 "donation, bra omdöme och/eller positiv kommentar."
 
-#: fail2wp.php:366
+#: fail2wp.php:366 fail2wp.php:1354
 msgid ""
 "If there is something you feel to be missing from this plugin, or if you "
 "have found a problem with the code or a feature, please do not hesitate to "
@@ -106,90 +106,90 @@ msgstr ""
 "Om du anser att något saknas i detta tillägg eller om du har hittat ett fel "
 "i koden eller en funktion, tveka inte att höra av dig till"
 
-#: fail2wp.php:381
+#: fail2wp.php:381 fail2wp.php:1369
 msgid "Site label"
 msgstr "Webbplatsnamn"
 
-#: fail2wp.php:382
+#: fail2wp.php:382 fail2wp.php:1370
 msgid "Block user enum"
 msgstr "Blockera 'user enum'"
 
-#: fail2wp.php:383
+#: fail2wp.php:383 fail2wp.php:1371
 msgid "Block username login"
 msgstr "Blockera användarnamn"
 
-#: fail2wp.php:384
+#: fail2wp.php:384 fail2wp.php:1372
 msgid "Secure login messages"
 msgstr "Säkra felmeddelanden"
 
-#: fail2wp.php:385
+#: fail2wp.php:385 fail2wp.php:1374
 msgid "Other settings"
 msgstr "Andra inställningar"
 
-#: fail2wp.php:386
+#: fail2wp.php:386 fail2wp.php:1377
 msgid "Remove settings"
 msgstr "Radera inställningar"
 
-#: fail2wp.php:389
+#: fail2wp.php:389 fail2wp.php:1389
 msgid "Successful login"
 msgstr "Lyckad inloggning"
 
-#: fail2wp.php:390
+#: fail2wp.php:390 fail2wp.php:1390
 msgid "Unsuccessful login"
 msgstr "Misslyckad inloggning"
 
-#: fail2wp.php:395
+#: fail2wp.php:395 fail2wp.php:1405
 msgid "Logging prefix"
 msgstr "Loggningsprefix"
 
-#: fail2wp.php:396
+#: fail2wp.php:396 fail2wp.php:1406
 msgid "Also log to PHP log"
 msgstr "Logga även till PHP-logg"
 
-#: fail2wp.php:399
+#: fail2wp.php:399 fail2wp.php:1409
 msgid "Check for Cloudflare IP"
 msgstr "Hantera Cloudflare IP"
 
-#: fail2wp.php:400
+#: fail2wp.php:400 fail2wp.php:1410
 msgid "Cloudflare IPv4"
 msgstr "Cloudflare IPv4"
 
-#: fail2wp.php:401
+#: fail2wp.php:401 fail2wp.php:1411
 msgid "Cloudflare IPv6"
 msgstr "Cloudflare IPv6"
 
-#: fail2wp.php:484
+#: fail2wp.php:484 fail2wp.php:1574
 msgid ""
 "The site name to use for logging, defaults to your site name if left empty"
 msgstr ""
 "Namn för webbplatsen att använda för loggning, hämtas från WordPress om "
 "fältet är tomt"
 
-#: fail2wp.php:529
+#: fail2wp.php:529 fail2wp.php:1600
 msgid "Unknown users"
 msgstr "Okända användare"
 
-#: fail2wp.php:537
+#: fail2wp.php:537 fail2wp.php:1607
 msgid "User enumeration attempts (i.e. your.site/...?author=nnn)"
 msgstr "Försök att hämta användarnamn (t ex din.sajt.../?author=nnn)"
 
-#: fail2wp.php:545
+#: fail2wp.php:545 fail2wp.php:1705
 msgid "Remove all plugin settings and data when plugin is uninstalled"
 msgstr "Ta bort alla inställningar när tillägget avinstalleras"
 
-#: fail2wp.php:553
+#: fail2wp.php:553 fail2wp.php:1712
 msgid "Block user enumeration attempts (i.e. your.site/...?author=nnn)"
 msgstr "Blockera försök att hämta användarnamn (t ex din.sajt.../?author=nnn)"
 
-#: fail2wp.php:561
+#: fail2wp.php:561 fail2wp.php:1719
 msgid "Require users to login with their e-mail address"
 msgstr "Kräv inloggning med e-postadress"
 
-#: fail2wp.php:569
+#: fail2wp.php:569 fail2wp.php:1726
 msgid "Change login failure messages to contain less detail"
 msgstr "Ändra felmeddelanden till färre detaljer vi misslyckad inloggning"
 
-#: fail2wp.php:577
+#: fail2wp.php:577 fail2wp.php:1753
 msgid ""
 "Please make sure you understand how these settings can impact the operation "
 "of the plugin before making changes to them."
@@ -197,11 +197,11 @@ msgstr ""
 "Var säker på att du förstår hur dessa inställningar kan förändra hur "
 "tillägget fungerar innan du ändrar dem."
 
-#: fail2wp.php:585
+#: fail2wp.php:585 fail2wp.php:1761
 msgid "These settings allows the plugin to better interact with Cloudflare."
 msgstr "Dessa inställning förbättrar hur tillägget fungerar med Cloudflare."
 
-#: fail2wp.php:587
+#: fail2wp.php:587 fail2wp.php:1763
 msgid ""
 "If your site is not published via Cloudflare, you can safely ignore these "
 "settings."
@@ -209,41 +209,391 @@ msgstr ""
 "Om du inte använder Cloudflare för din sajt så behöver du inte ändra något "
 "här."
 
-#: fail2wp.php:589
+#: fail2wp.php:589 fail2wp.php:1765
 msgid "For an updated list of Cloudflare IPs, please use this link"
-msgstr "För en uppdaterad lista med Cloudflares IP-adresser, vänligen använd "
-"denna länk"
+msgstr ""
+"För en uppdaterad lista med Cloudflares IP-adresser, vänligen använd denna "
+"länk"
 
-#: fail2wp.php:599
+#: fail2wp.php:599 fail2wp.php:1840
 msgid "The logging prefix, this should normally be left empty"
 msgstr "Loggningsprefix, detta skall i normala fall vara tomt"
 
-#: fail2wp.php:606
+#: fail2wp.php:606 fail2wp.php:1846
 msgid "Log the same information to PHP log using error_log()"
 msgstr "Logga samma information till PHP:s logg via error_log()"
 
-#: fail2wp.php:614
+#: fail2wp.php:614 fail2wp.php:1854
 msgid "Attempt to unmask real IP when Cloudflare IP is detected"
 msgstr "Försök att avkoda den verkliga IP-adressen när Cloudflare upptäcks"
 
-#: fail2wp.php:626 fail2wp.php:637
+#: fail2wp.php:626 fail2wp.php:637 fail2wp.php:1861 fail2wp.php:1867
 msgid ""
 "IPs matching these addresses will be considerd to be coming from Cloudflare"
 msgstr ""
 "IP-adresser som matchar dessa kommer att hanteras som Cloudflare-adresser"
 
-#: fail2wp.php:962 fail2wp.php:966
+#: fail2wp.php:962 fail2wp.php:966 fail2wp.php:2239 fail2wp.php:2243
 msgid "Please specify your e-mail address to login"
 msgstr "Vänligen ange din e-postadress för att logga in"
 
-#: fail2wp.php:989
+#: fail2wp.php:989 fail2wp.php:2261
 msgid "E-mail address"
 msgstr "E-postadress"
 
-#: fail2wp.php:1094 fail2wp.php:1122
+#: fail2wp.php:1094 fail2wp.php:1122 fail2wp.php:2366 fail2wp.php:2399
 msgid "Invalid login credentials, please try again."
 msgstr "Ogiltig inloggningsinformation, försök igen."
 
-#: fail2wp.php:1126
+#: fail2wp.php:1126 fail2wp.php:2403
 msgid "Lost password"
 msgstr "Återställ lösenord"
+
+#: fail2wp.php:450
+msgid "Settings "
+msgstr "Inställningar "
+
+#: fail2wp.php:548
+msgid "You are not currently logged in."
+msgstr "Du är inte inloggad."
+
+#: fail2wp.php:629 fail2wp.php:667 fail2wp.php:686 fail2wp.php:706
+msgid "No route was found matching the URL and request method."
+msgstr "Ingen route hittades som motsvarade webbadressen och metod för begäran."
+
+#: fail2wp.php:743 fail2wp.php:754 fail2wp.php:765
+msgid "Invalid username, please try again."
+msgstr "Ogiltigt användarnamn, försök igen."
+
+#: fail2wp.php:747 fail2wp.php:793
+msgid "Invalid e-mail address, please try again."
+msgstr "Ogiltig e-postadress, försök igen."
+
+#: fail2wp.php:811
+msgid "New user role default has been reset according to your"
+msgstr "Förvald roll för nya användare har återställts enligt dina"
+
+#: fail2wp.php:815
+msgid "settings"
+msgstr "inställningar"
+
+#: fail2wp.php:834
+msgid "Notification about new user role from"
+msgstr "Avisering om ändring av förvald roll"
+
+#: fail2wp.php:836
+msgid "This is a notification from"
+msgstr "Detta är en avisering från"
+
+#: fail2wp.php:838
+msgid ""
+"The role for newly registered users has been reset to your configured "
+"setting."
+msgstr ""
+"Den förvalda rollen för nya användare har återställts till den som du "
+"konfigurerat."
+
+#: fail2wp.php:840
+msgid "This notification was sent from the site"
+msgstr "Denna avisering skickades från sajten"
+
+#: fail2wp.php:842
+msgid "You may access the admin interface to the site here"
+msgstr "Du når administrationsgränssnittet här"
+
+#: fail2wp.php:859
+msgid "User registration is enabled, but the new user role does not match"
+msgstr "Användarregistrering är aktiv, men den förvalda rollen matchar inte"
+
+#: fail2wp.php:868 fail2wp.php:898 fail2wp.php:927
+msgid "Go to"
+msgstr "Gå till"
+
+#: fail2wp.php:870 fail2wp.php:900 fail2wp.php:929
+msgid "General settings"
+msgstr "Allmänna inställningar"
+
+#: fail2wp.php:872 fail2wp.php:902 fail2wp.php:931
+msgid "to check your membership and new user settings."
+msgstr "för att kontrollera inställningarna för medlemsskap och nya användare."
+
+#: fail2wp.php:889
+msgid "User registration is enabled, and new users will be administrators"
+msgstr "Användarregistrering är aktiv och nya användare blir administratörer"
+
+#: fail2wp.php:918
+msgid "User registration is enabled, but no role has been configured"
+msgstr "Användarregistrering är aktiv, men ingen förvald roll har konfigurerats"
+
+#: fail2wp.php:1057
+msgid ""
+"Provides authentication security functions for WordPress, plays nicely with "
+"Fail2ban and Cloudflare"
+msgstr ""
+"Tillhandahåller autentiseringsloggning och säkerhetsfunktioner för "
+"WordPress, fungerar även bra med Fail2ban och Cloudflare"
+
+#: fail2wp.php:1063
+msgid "New users"
+msgstr "Nya användare"
+
+#: fail2wp.php:1066
+msgid "User logging"
+msgstr "Loggning"
+
+#: fail2wp.php:1069
+msgid "REST API"
+msgstr "REST API"
+
+#: fail2wp.php:1078
+msgid "Import/Export"
+msgstr "Import/Export"
+
+#: fail2wp.php:1108
+msgid ""
+"Some data was filtered, please make sure you paste the content exactly as "
+"copied"
+msgstr ""
+"Data har filtrerats, kontrollera att du klistrar in innehållet exakt som "
+"det kopierades"
+
+#: fail2wp.php:1113 fail2wp.php:1121
+msgid "Please make sure you paste the content exactly as copied"
+msgstr "Kontrollera att du klistrar in innehållet exakt som det kopierades"
+
+#: fail2wp.php:1126
+msgid ""
+"Plugin version mismatch. You can only import exported data from the same "
+"version as the one currently installed"
+msgstr ""
+"Versionerna matchar inte varandra. Du kan bara importera exporterat data "
+"från samma version som den som är installerad"
+
+#: fail2wp.php:1190
+msgid "The following settings were ignored during the import"
+msgstr "Följande inställningar ignorerades vid importen"
+
+#: fail2wp.php:1197
+msgid "Settings were successfully imported"
+msgstr "Inställningarna har importerats"
+
+#: fail2wp.php:1201
+msgid "The setting \"Site label\" may need manual correction"
+msgstr "Inställningen \"Webbplatsnamn\" kan behöva korrigeras"
+
+#: fail2wp.php:1208
+msgid "This tab can be used to import and export settings for the plugin."
+msgstr "Denna flik kan användas för att importera och exportera inställningar."
+
+#: fail2wp.php:1212 fail2wp.php:1221
+msgid "Import settings"
+msgstr "Importera inställningar"
+
+#: fail2wp.php:1217
+msgid "Paste settings in this field to import them"
+msgstr "Klistra in inställningarna i detta fält för att importera dem"
+
+#: fail2wp.php:1226
+msgid "Export settings"
+msgstr "Exportera inställningar"
+
+#: fail2wp.php:1272
+msgid "Unable to create data for export"
+msgstr "Kunde inte skapa data för export"
+
+#: fail2wp.php:1280
+msgid "Copy the text in this field to export your settings to another site"
+msgstr "Kopiera texten i detta fält för att exportera inställningar till en annan sajt"
+
+#: fail2wp.php:1304
+msgid ""
+"This is logged to the system's authentication log, which allows Fail2ban to "
+"dynamically block offending IP addresses."
+msgstr ""
+"Detta loggas till systemetes autentiseringslogg, som gör det möjligt för "
+"Fail2ban att på dynamisk väg blockera IP-adresser."
+
+#: fail2wp.php:1306
+msgid ""
+"Configuration of the Fail2ban system daemon, or similar, must be done "
+"outside of WordPress for this to have any effect."
+msgstr ""
+"Konfiguration av Fail2ban, eller liknande, måste göras utanför WordPress för "
+"att dessa inställningar skall ha någon effekt."
+
+#; fail2wp.php:1357
+msgid "There is more documentation available at"
+msgstr "Det finns mer dokumentation på"
+
+#: fail2wp.php:1375
+msgid "Remove generator info"
+msgstr "Inaktivera generatorinfo"
+
+#: fail2wp.php:1376
+msgid "Remove feeds"
+msgstr "Inaktivera flöden"
+
+#: fail2wp.php:1380
+msgid "Membership warnings"
+msgstr "Medlemsskapsvarningar"
+
+#: fail2wp.php:1381
+msgid "Check for role"
+msgstr "Jämför med roll"
+
+#: fail2wp.php:1382
+msgid "Force role"
+msgstr "Tvinga roll"
+
+#: fail2wp.php:1383
+msgid "Role to force"
+msgstr "Tvingad roll"
+
+#: fail2wp.php:1384
+msgid "Minimum username length"
+msgstr "Minsta antal tecken för användarnamn"
+
+#: fail2wp.php:1385
+msgid "Banned usernames"
+msgstr "Spärrade användarnamn"
+
+#: fail2wp.php:1386
+msgid "E-mail must match"
+msgstr "E-post måste matcha"
+
+#: fail2wp.php:1392
+msgid "Log user enum"
+msgstr "Logga 'user enum'"
+
+#: fail2wp.php:1395
+msgid "Require authentication"
+msgstr "Kräv autentisering"
+
+#: fail2wp.php:1396
+msgid "Log blocked requests"
+msgstr "Logga blockerade anrop"
+
+#: fail2wp.php:1397
+msgid "Block index requests"
+msgstr "Blockera index-anrop"
+
+#: fail2wp.php:1398
+msgid "Block all requests"
+msgstr "Blockera alla anrop"
+
+#: fail2wp.php:1399
+msgid "Block specific namespaces"
+msgstr "Blockera specifika namespaces"
+
+#: fail2wp.php:1400
+msgid "Block specific routes"
+msgstr "Blockera specifika sökvägar"
+
+#: fail2wp.php:1401
+msgid "Bypass blocks for IPv4"
+msgstr "Tillåt från IPv4"
+
+#: fail2wp.php:1402
+msgid "Bypass blocks for IPv6"
+msgstr "Tillåt från IPv6"
+
+#: fail2wp.php:1615
+msgid "Warn about odd membership/registration settings"
+msgstr "Varna för udda medlemsskap-/registreringsinställningar"
+
+#: fail2wp.php:1633
+msgid "Check WordPress setting against the value configured here"
+msgstr "Jämför WordPress inställning med det som konfigurerats här"
+
+#: fail2wp.php:1637 fail2wp.php:1666
+msgid "No available roles (?)"
+msgstr "Inga tillgängliga roller (?)"
+
+#: fail2wp.php:1645
+msgid "Force new user registration settings to a role"
+msgstr "Tvinga inställningen för nya användare till en roll"
+
+#: fail2wp.php:1663
+msgid "Force WordPress setting to the value configured here"
+msgstr "Tvinga WordPress-inställning till värdet som konfigurerats här"
+
+#: fail2wp.php:1672
+msgid "Minimum length of usernames, 2-200 characters, 0 ignores the setting"
+msgstr "Minsta antal tecken för användarnamn, 2-200 tecken, 0 avaktiverar kontrollen"
+
+#: fail2wp.php:1678
+msgid "These usernames will be blocked for new user registrations"
+msgstr "Dessa användarnamn blockeras vid registrering av nya användare"
+
+#: fail2wp.php:1684
+msgid "E-mail address must match at least one of these for new users"
+msgstr "E-postadressen för nya användare måste matcha en av dessa"
+
+#: fail2wp.php:1690
+msgid "Remove \"Generator\" output in HTML, RSS, etc."
+msgstr "Ta bort \"Generator\"-infor från HTML, RSS, etc."
+
+#: fail2wp.php:1697
+msgid "Remove RSS and Atom feeds"
+msgstr "Inaktiverar RSS- och Atom-flöden"
+
+#: fail2wp.php:1734
+msgid ""
+"Please make sure you understand how these settings can impact the operation "
+"of WordPress and other plugins before making changes to them."
+msgstr ""
+"Var säker på att du förstår hur dessa inställningar kan förändra hur "
+"WordPress och andra tillägg fungerar innan du ändrar dem."
+
+#: fail2wp.php:1738
+msgid "The REST API URL of this site is"
+msgstr "Webbplatsens REST API URL är"
+
+#: fail2wp.php:1743
+msgid "NOTE"
+msgstr "OBS!"
+
+#: fail2wp.php:1744
+msgid ""
+"If \"Require authentication\" is enabled, no REST API calls will be blocked "
+"for logged in users and/or authenticated requests!"
+msgstr ""
+"Om \"Kräv autentisering\" är aktiverat så blockeras inga REST API-anrop för "
+"inloggade och/eller autentiserade användare!"
+
+#: fail2wp.php:1777
+msgid ""
+"Require that users be logged in and/or that all REST API calls are "
+"authenticated, this is typically safe to do."
+msgstr ""
+"Kräv att användare är inloggad och/eller att alla REST API-anrop är "
+"autentiserade. Detta är säkert att göra i normala fall."
+
+#: fail2wp.php:1784
+msgid ""
+"Blocks all REST API index calls made to this site, this is typically safe to "
+"do."
+msgstr ""
+"Blockera alla REST API-anrop till index, detta är säkert att göra i "
+"normala fall."
+
+#: fail2wp.php:1791
+msgid "Log all blocked REST API calls for Fail2ban processing."
+msgstr "Logga alla blockerade REST API-anrop för behandling av Fail2ban."
+
+#: fail2wp.php:1798
+msgid ""
+"Blocks all REST API calls made to this site, this is typically not safe to "
+"do."
+msgstr ""
+"Blockera alla REST API-anrop till denna webbplats. Detta är för det mesta "
+"inte rekommenderat."
+
+#: fail2wp.php:1805
+msgid "WordPress did not return any available namespaces"
+msgstr "WordPress returnerade inga tillgängliga namespaces"
+
+#: fail2wp.php:1830 fail2wp.php:1836
+msgid "IPs matching these addresses will be allowed to make any REST API call"
+msgstr ""
+"IP-adresser som matchar dessa får göra alla REST API-anrop"

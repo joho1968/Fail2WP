@@ -29,41 +29,53 @@
  *  Boston, MA  02110-1301, USA.
  */
 
+//  define( 'FAIL2WP_UNINSTALL_TRACE', true );
+
 // Don't load directly
 defined( 'ABSPATH' ) || die( '-1' );
 // If uninstall not called from WordPress, then exit
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
+        error_log( 'fail2wp-uninstall: init' );
+    }
 	exit;
 }
 // If action is not to uninstall, then exit
 if ( empty( $_REQUEST['action'] ) || $_REQUEST['action'] !== 'delete-plugin' ) {
+    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
+        error_log( 'fail2wp-uninstall: REQUEST["action"] is not delete-plugin' );
+    }
 	exit;
 }
 // If it's not us, then exit
 if ( empty( $_REQUEST['slug'] ) || $_REQUEST['slug'] !== 'fail2wp' ) {
+    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
+        error_log( 'fail2wp-uninstall: REQUEST["slug"] is not fail2wp' );
+    }
 	exit;
 }
 // If we shouldn't do this, then exit
 if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'delete_plugins' ) ) {
+    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
+        error_log( 'fail2wp-uninstall: User is not allowed to manage/uninstall plugins' );
+    }
 	exit;
 }
 
 // Figure out if an uninstall should remove plugin settings
-$remove_settings = get_option( 'fail2wp-remove-settings', '0' );
+$remove_settings = get_option( 'fail2wp-settings-remove', '0' );
 
 if ( $remove_settings == '1' ) {
-	// Remove Fail2WP settings
-    delete_option( 'fail2wp-site-label'           );
-    delete_option( 'fail2wp-roles-notify'         );
-    delete_option( 'fail2wp-roles-warn'           );
-    delete_option( 'fail2wp-unknown-warn'         );
-    delete_option( 'fail2wp-settings-remove'      );
-    delete_option( 'fail2wp-also-log-php'         );
-    delete_option( 'fail2wp-block-user-enum'      );
-    delete_option( 'fail2wp-log-user-enum'        );
-    delete_option( 'fail2wp-block-username-login' );
-    delete_option( 'fail2wp-secure-login-message' );
-    delete_option( 'fail2wp-cloudflare-check'     );
-    delete_option( 'fail2wp-cloudflare-ipv4'      );
-    delete_option( 'fail2wp-cloudflare-ipv6'      );
+    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
+        error_log( 'fail2wp-uninstall: uninstalling' );
+    }
+    define( 'FAIL2WP_WORDPRESS_PLUGIN', true );
+
+    require_once dirname(__FILE__) . '/includes/fail2wp_misc.inc.php';
+
+    fail2wp_misc_delete_all_settings();
+} else {
+    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
+        error_log( 'fail2wp-uninstall: $remove_settings = ' . var_export( $remove_settings, true ) );
+    }
 }

@@ -1,8 +1,8 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.6-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.7-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
-Security plugin for WordPress with support for Fail2ban and Cloudflare. Tested with WordPress 5.6+.
+Security plugin for WordPress with support for Fail2ban and Cloudflare. Tested with WordPress 5.5+.
 
 ## Description
 
@@ -17,14 +17,21 @@ Basic security functionality includes:
 * Disabling login with username (require e-mail address)
 * Preventing user enumeration (?author=nnn)
 * Less detailed error messages on login failures
+* Minimum username length
+* Blocking specific usernames from being used to register new users
+* Requiring e-mail address matching for new user registrations
+* Warning about new user role setting
+* Blocking of portions or all of WordPress REST API
+* Disabling of RSS and Atom feeds
+* Removal of "Generator" information from HTML and feeds
 * Detection of Cloudflare IP addresses for logging of actual IP addresses
 
 The plugin also plays nicely with Fail2ban, which is an advanced way of blocking IP addresses dynamically upon suspicious behavior.
 
 ### Other notes
 
-* This plugin may work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5.3`, `5.6`, and `5.6.1` at the time of this writing
+* This plugin `may` work with earlier versions of WordPress
+* This plugin has been tested with `WordPress 5.5+` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -59,10 +66,23 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Changelog
 
+### 1.1.0
+* Added minimum username length
+* Added blocking of specific usernames (user registration)
+* Added requiring e-mail address matching setting
+* Added warning about new user role setting
+* Added blocking of portions or all of WordPress REST API
+* Added setting to disable RSS and Atom feeds
+* Added setting to remove "Generator" information from HTML and feeds
+* Minor corrections and general improvements
+
 ### 1.0.0
 * Initial release
 
 ## Upgrade Notice
+
+### 1.1.0
+* Install the new version and walk through the settings.
 
 ### 1.0.0
 * Initial release
@@ -100,6 +120,8 @@ If you find this plugin useful, the author is happy to receive a donation, good 
 If there is something you feel to be missing from this plugin, or if you have found a problem with the code or a feature, please do not hesitate to reach out to support@webbplatsen.se.
 
 This plugin can also be downloaded from [code.webbplatsen.net](https://code.webbplatsen.net/wordpress/fail2wp/) and [WordPress.org](https://wordpress.org/plugins/fail2wp/)
+
+More detailed documentation is available at [code.webbplatsen.net/documentation/fail2wp/](https://code.webbplatsen.net/documentation/fail2wp/)
 
 Kudos to [Vincent Le Moign and Webalys](https://webalys.com) and [Thomas Lutz](https://github.com/tholu)
 
