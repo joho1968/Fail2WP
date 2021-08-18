@@ -1,4 +1,4 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.7-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
@@ -31,7 +31,7 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 ### Other notes
 
 * This plugin `may` work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5+` at the time of this writing
+* This plugin has been tested with `WordPress 5.5, 5.6, 5.7, and 5.8` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -66,6 +66,9 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Changelog
 
+### 1.1.1
+* Verified for WordPress 5.8
+
 ### 1.1.0
 * Added minimum username length
 * Added blocking of specific usernames (user registration)
@@ -80,6 +83,9 @@ This is a hard question to answer. There are no known incompatibilities.
 * Initial release
 
 ## Upgrade Notice
+
+### 1.1.1
+* Install the new version, no changes have been made to settings.
 
 ### 1.1.0
 * Install the new version and walk through the settings.

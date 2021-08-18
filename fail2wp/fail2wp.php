@@ -10,8 +10,8 @@
  * @wordpress-plugin
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
- * Description:       Security plugin for WordPress with support for fail2ban
- * Version:           1.1.0
+ * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
+ * Version:           1.1.1
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -51,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.1.0'                 );
+define( 'FAIL2WP_VERSION',                 '1.1.1'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -156,7 +156,7 @@ class Fail2WP {
                                              'X-Auto-Response-Suppress: All',
                                              'Precedence: auto_reply' );
         // We only need to query this once really
-        $this->fail2wp_have_mbstring = extension_loaded( 'mbstring ');
+        $this->fail2wp_have_mbstring = extension_loaded( 'mbstring' );
         // Things we may be interested in for the REST API
         $this->fail2wp_rest_filter_route_list = array(
             'categories',
@@ -447,7 +447,7 @@ class Fail2WP {
      */
     public function fail2wp_settings_link( array $links ) {
         $our_link = '<a href ="' . esc_url( admin_url() . 'options-general.php?page=' . $this->plugin_name ) . '">' .
-                                   esc_html__( 'Settings ', $this->plugin_name ) . '</a>';
+                                   esc_html__( 'Settings', $this->plugin_name ) . '</a> ';
         array_unshift( $links, $our_link );
         return ( $links );
     }

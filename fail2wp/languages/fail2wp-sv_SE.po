@@ -250,8 +250,8 @@ msgid "Lost password"
 msgstr "Återställ lösenord"
 
 #: fail2wp.php:450
-msgid "Settings "
-msgstr "Inställningar "
+msgid "Settings"
+msgstr "Inställningar"
 
 #: fail2wp.php:548
 msgid "You are not currently logged in."
@@ -383,7 +383,7 @@ msgstr "Inställningen \"Webbplatsnamn\" kan behöva korrigeras"
 
 #: fail2wp.php:1208
 msgid "This tab can be used to import and export settings for the plugin."
-msgstr "Denna flik kan användas för att importera och exportera inställningar."
+msgstr "Här kan du importera och exportera inställningar."
 
 #: fail2wp.php:1212 fail2wp.php:1221
 msgid "Import settings"
@@ -531,7 +531,7 @@ msgstr "E-postadressen för nya användare måste matcha en av dessa"
 
 #: fail2wp.php:1690
 msgid "Remove \"Generator\" output in HTML, RSS, etc."
-msgstr "Ta bort \"Generator\"-infor från HTML, RSS, etc."
+msgstr "Ta bort \"Generator\"-info från HTML, RSS, etc."
 
 #: fail2wp.php:1697
 msgid "Remove RSS and Atom feeds"
