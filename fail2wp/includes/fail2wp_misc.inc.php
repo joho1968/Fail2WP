@@ -8,7 +8,7 @@
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
  * fail2wp_misc.inc.php
- * Copyright (C) 2021 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021, 2022, 2023 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -99,7 +99,22 @@ function fail2wp_misc_delete_all_settings() {
     delete_option( 'fail2wp-cloudflare-ipv4'           );
     delete_option( 'fail2wp-cloudflare-ipv6'           );
 
-    if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
-        error_log( 'fail2wp-uninstall: ' . __FUNCTION__ . ' end' );
-    }
+    delete_option( 'fail2wp-allow-ipv4'                );
+    delete_option( 'fail2wp-allow-ipv6'                );
+    delete_option( 'fail2wp-deny-ipv4'                 );
+    delete_option( 'fail2wp-deny-ipv6'                 );
+
+    delete_option( 'fail2wp_loginip_enable'            );
+    delete_option( 'fail2wp-loginip-dnscache'          );
+    delete_option( 'fail2wp-loginip-allow'             );
+    delete_option( 'fail2wp-loginip-deny'              );
+    delete_option( 'fail2wp-loginip-testmode'          );
+    delete_option( 'fail2wp-loginip-inform-fail2ban'   );
+
+    delete_option( 'fail2wp-xmlrpc-disable'            );
+    delete_option( 'fail2wp-xmlrpc-disable-pingback'   );
+    delete_option( 'fail2wp-xmlrpc-disable-everything' );
+    delete_option( 'fail2wp-xmlrpc-inform-fail2ban'    );
+
+    delete_option( 'fail2wp-hostname-cache'            );
 }

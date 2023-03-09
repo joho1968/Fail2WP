@@ -1,10 +1,10 @@
 === Fail2WP ===
 
-This document describes how to integrate the Fail2WP plugin with the Fail2ban
+This document describes how to integrate the Fail2WP plugin with the fail2ban
 daemon. The basics of it is for Fail2WP to create log entries in something like
-auth.log and then have Fail2ban act upon these entries.
+auth.log and then have fail2ban act upon these entries.
 
-Typically, Fail2ban is set-up in a way that will block certain IP addresses
+Typically, fail2ban is set-up in a way that will block certain IP addresses
 after a number of consecutive failed actions within a specific timeframe. It
 does this by inserting temporary entries into IPTABLES.
 
@@ -25,13 +25,13 @@ would allow you do consider certain failures to be "hard", and certain failures
 to be "soft", thus allowing you to configure separate ban times and retry
 attempts.
 
-OBVIOUS NOTE: Fail2ban acts on IP addresses. If this WordPress plugin is used
-in a shared environment, Fail2ban may block IP addresses that should not be
+OBVIOUS NOTE: fail2ban acts on IP addresses. If this WordPress plugin is used
+in a shared environment, fail2ban may block IP addresses that should not be
 blocked. Depending on your preferences and needs, this may or may not work for
 you.
 
-The Fail2WP plugin does not require Fail2ban to operate. There are other
+The Fail2WP plugin does not require fail2ban to operate. There are other
 security enhancing functions in the plugin that can be enabled without the use
-of Fail2ban.
+of fail2ban.
 
 --- you have reached the EOF

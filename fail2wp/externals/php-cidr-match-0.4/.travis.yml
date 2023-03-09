@@ -1,0 +1,16 @@
+language: php
+dist: xenial
+php:
+  - '5.6'
+  - '7.1'
+  - '7.2'
+
+before_script:
+  - composer install
+
+script:
+  - cd ./tests/
+  - ../vendor/bin/phpunit
+
+notifications:
+  email: false

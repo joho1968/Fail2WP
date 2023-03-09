@@ -8,7 +8,7 @@
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
  * class-fail2wp-syslog.php
- * Copyright (C) 2021 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021, 2022 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -33,13 +33,13 @@ namespace fail2wp;
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+    die;
 }
 if ( ! defined( 'ABSPATH' ) ) {
-	die( '-1' );
+    die( '-1' );
 }
 if ( ! defined( 'FAIL2WP_VERSION' ) ) {
-	die( '-1' );
+    die( '-1' );
 }
 
 
@@ -50,7 +50,7 @@ class SysLog {
     private $x_last_facility = null;
     private $x_last_prefix = null;
 
-	public function __construct( string $prefix = '', int $facility = -1 ) {
+    public function __construct( string $prefix = '', int $facility = -1 ) {
         $this->x_default_prefix = $prefix;
         $this->x_default_facility = $facility;
     }

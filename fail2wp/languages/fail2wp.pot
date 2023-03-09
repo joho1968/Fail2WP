@@ -1,14 +1,14 @@
 # Fail2WP WordPress plugin <LANGUAGE> translation
-# Copyright (C) 2021 Joaquim Homrighausen
+# Copyright (C) 2021, 2022, 2023 Joaquim Homrighausen
 # This file is distributed under the same license as the Fail2WP package.
-# Joaquim Homrighausen <joho@webbplatsen.se>, 2021.
+# Joaquim Homrighausen <joho@webbplatsen.se>, 2023.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fail2wp 1.1.0\n"
+"Project-Id-Version: fail2wp 1.2.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-08 15:28+0100\n"
+"POT-Creation-Date: 2023-03-08 15:51+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Joaquim Homrighausen <joho@webbplatsen.se>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,202 +17,207 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: fail2wp.php:450
+#: fail2wp.php:450 fail2wp.php:737
 msgid "Settings"
 msgstr ""
 
-#: fail2wp.php:548
+#: fail2wp.php:548 fail2wp.php:837
 msgid "You are not currently logged in."
 msgstr ""
 
 #: fail2wp.php:629 fail2wp.php:667 fail2wp.php:686 fail2wp.php:706
+#: fail2wp.php:915 fail2wp.php:953 fail2wp.php:972 fail2wp.php:992
 msgid "No route was found matching the URL and request method."
 msgstr ""
 
-#: fail2wp.php:743 fail2wp.php:754 fail2wp.php:765
+#: fail2wp.php:743 fail2wp.php:754 fail2wp.php:765 fail2wp.php:1030
+#: fail2wp.php:1041 fail2wp.php:1052
 msgid "Invalid username, please try again."
 msgstr ""
 
-#: fail2wp.php:747 fail2wp.php:793
+#: fail2wp.php:747 fail2wp.php:793 fail2wp.php:1034 fail2wp.php:1080
 msgid "Invalid e-mail address, please try again."
 msgstr ""
 
-#: fail2wp.php:811
+#: fail2wp.php:811 fail2wp.php:1099
 msgid "New user role default has been reset according to your"
 msgstr ""
 
-#: fail2wp.php:815
+#: fail2wp.php:815 fail2wp.php:1103
 msgid "settings"
 msgstr ""
 
-#: fail2wp.php:834
+#: fail2wp.php:834 fail2wp.php:1122
 msgid "Notification about new user role from"
 msgstr ""
 
-#: fail2wp.php:836
+#: fail2wp.php:836 fail2wp.php:1124
 msgid "This is a notification from"
 msgstr ""
 
-#: fail2wp.php:838
+#: fail2wp.php:838 fail2wp.php:1126
 msgid ""
 "The role for newly registered users has been reset to your configured "
 "setting."
 msgstr ""
 
-#: fail2wp.php:840
+#: fail2wp.php:840 fail2wp.php:1128
 msgid "This notification was sent from the site"
 msgstr ""
 
-#: fail2wp.php:842
+#: fail2wp.php:842 fail2wp.php:1130
 msgid "You may access the admin interface to the site here"
 msgstr ""
 
-#: fail2wp.php:859
+#: fail2wp.php:859 fail2wp.php:1147
 msgid "User registration is enabled, but the new user role does not match"
 msgstr ""
 
-#: fail2wp.php:868 fail2wp.php:898 fail2wp.php:927
+#: fail2wp.php:868 fail2wp.php:898 fail2wp.php:927 fail2wp.php:1156
+#: fail2wp.php:1186 fail2wp.php:1215
 msgid "Go to"
 msgstr ""
 
-#: fail2wp.php:870 fail2wp.php:900 fail2wp.php:929
+#: fail2wp.php:870 fail2wp.php:900 fail2wp.php:929 fail2wp.php:1158
+#: fail2wp.php:1188 fail2wp.php:1217
 msgid "General settings"
 msgstr ""
 
-#: fail2wp.php:872 fail2wp.php:902 fail2wp.php:931
+#: fail2wp.php:872 fail2wp.php:902 fail2wp.php:931 fail2wp.php:1160
+#: fail2wp.php:1190 fail2wp.php:1219
 msgid "to check your membership and new user settings."
 msgstr ""
 
-#: fail2wp.php:889
+#: fail2wp.php:889 fail2wp.php:1177
 msgid "User registration is enabled, and new users will be administrators"
 msgstr ""
 
-#: fail2wp.php:918
+#: fail2wp.php:918 fail2wp.php:1206
 msgid "User registration is enabled, but no role has been configured"
 msgstr ""
 
-#: fail2wp.php:1011 fail2wp.php:1016
+#: fail2wp.php:1011 fail2wp.php:1016 fail2wp.php:1300 fail2wp.php:1305
 msgid "Unknown role"
 msgstr ""
 
-#: fail2wp.php:1057
+#: fail2wp.php:1057 fail2wp.php:1350
 msgid ""
 "Provides authentication security functions for WordPress, plays nicely with "
 "Fail2ban and Cloudflare"
 msgstr ""
 
-#: fail2wp.php:1060
+#: fail2wp.php:1060 fail2wp.php:1353
 msgid "Basic configuration"
 msgstr ""
 
-#: fail2wp.php:1063
+#: fail2wp.php:1063 fail2wp.php:1359
 msgid "New users"
 msgstr ""
 
-#: fail2wp.php:1066
+#: fail2wp.php:1066 fail2wp.php:1362 fail2wp.php:2145
 msgid "User logging"
 msgstr ""
 
-#: fail2wp.php:1069
+#: fail2wp.php:1069 fail2wp.php:1365
 msgid "REST API"
 msgstr ""
 
-#: fail2wp.php:1072
+#: fail2wp.php:1072 fail2wp.php:1371
 msgid "Advanced"
 msgstr ""
 
-#: fail2wp.php:1075
+#: fail2wp.php:1075 fail2wp.php:1374
 msgid "Cloudflare"
 msgstr ""
 
-#: fail2wp.php:1078
+#: fail2wp.php:1078 fail2wp.php:1377
 msgid "Import/Export"
 msgstr ""
 
-#: fail2wp.php:1081
+#: fail2wp.php:1081 fail2wp.php:1380
 msgid "About"
 msgstr ""
 
-#: fail2wp.php:1086
+#: fail2wp.php:1086 fail2wp.php:1385
 msgid ""
 "One or more of openlog(), closelog(), and/or syslog() seem to be missing on "
 "this system"
 msgstr ""
 
-#: fail2wp.php:1108
+#: fail2wp.php:1108 fail2wp.php:1407
 msgid ""
 "Some data was filtered, please make sure you paste the content exactly as "
 "copied"
 msgstr ""
 
-#: fail2wp.php:1113 fail2wp.php:1121
+#: fail2wp.php:1113 fail2wp.php:1121 fail2wp.php:1412 fail2wp.php:1420
 msgid "Please make sure you paste the content exactly as copied"
 msgstr ""
 
-#: fail2wp.php:1126
+#: fail2wp.php:1126 fail2wp.php:1425
 msgid ""
 "Plugin version mismatch. You can only import exported data from the same "
 "version as the one currently installed"
 msgstr ""
 
-#: fail2wp.php:1190
+#: fail2wp.php:1190 fail2wp.php:1491
 msgid "The following settings were ignored during the import"
 msgstr ""
 
-#: fail2wp.php:1197
+#: fail2wp.php:1197 fail2wp.php:1498
 msgid "Settings were successfully imported"
 msgstr ""
 
-#: fail2wp.php:1201
+#: fail2wp.php:1201 fail2wp.php:1502
 msgid "The setting \"Site label\" may need manual correction"
 msgstr ""
 
-#: fail2wp.php:1208
+#: fail2wp.php:1208 fail2wp.php:1509
 msgid "This tab can be used to import and export settings for the plugin."
 msgstr ""
 
-#: fail2wp.php:1212 fail2wp.php:1221
+#: fail2wp.php:1212 fail2wp.php:1221 fail2wp.php:1513 fail2wp.php:1522
 msgid "Import settings"
 msgstr ""
 
-#: fail2wp.php:1217
+#: fail2wp.php:1217 fail2wp.php:1518
 msgid "Paste settings in this field to import them"
 msgstr ""
 
-#: fail2wp.php:1226
+#: fail2wp.php:1226 fail2wp.php:1527
 msgid "Export settings"
 msgstr ""
 
-#: fail2wp.php:1272
+#: fail2wp.php:1272 fail2wp.php:1583
 msgid "Unable to create data for export"
 msgstr ""
 
-#: fail2wp.php:1280
+#: fail2wp.php:1280 fail2wp.php:1591
 msgid "Copy the text in this field to export your settings to another site"
 msgstr ""
 
-#: fail2wp.php:1304
+#: fail2wp.php:1304 fail2wp.php:1619
 msgid ""
 "This is logged to the system's authentication log, which allows Fail2ban to "
 "dynamically block offending IP addresses."
 msgstr ""
 
-#: fail2wp.php:1306
+#: fail2wp.php:1306 fail2wp.php:1621
 msgid ""
 "Configuration of the Fail2ban system daemon, or similar, must be done "
 "outside of WordPress for this to have any effect."
 msgstr ""
 
-#: fail2wp.php:1343
+#: fail2wp.php:1343 fail2wp.php:1664
 msgid "Thank you for installing"
 msgstr ""
 
-#: fail2wp.php:1344
+#: fail2wp.php:1344 fail2wp.php:1665
 msgid ""
 "This plugin provides security functions and integration between WordPress and"
 msgstr ""
 
-#: fail2wp.php:1348
+#: fail2wp.php:1348 fail2wp.php:1669
 msgid "Commercial support and customizations for this plugin is available from"
 msgstr ""
 
@@ -220,321 +225,512 @@ msgstr ""
 msgid "in Stockholm, Sweden. We speak Swedish and English"
 msgstr ""
 
-#: fail2wp.php:1352
+#: fail2wp.php:1352 fail2wp.php:1673
 msgid ""
 "The plugin is written by Joaquim Homrighausen and sponsored by WebbPlatsen i "
 "Sverige AB."
 msgstr ""
 
-#: fail2wp.php:1354
+#: fail2wp.php:1354 fail2wp.php:1675
 msgid ""
 "If you find this plugin useful, the author is happy to receive a donation, "
 "good review, or just a kind word."
 msgstr ""
 
-#: fail2wp.php:1355
+#: fail2wp.php:1355 fail2wp.php:1676
 msgid ""
 "If there is something you feel to be missing from this plugin, or if you "
 "have found a problem with the code or a feature, please do not hesitate to "
 "reach out to"
 msgstr ""
 
-#: fail2wp.php:1357
+#: fail2wp.php:1357 fail2wp.php:1680
 msgid "There is more documentation available at"
 msgstr ""
 
-#: fail2wp.php:1374
+#: fail2wp.php:1374 fail2wp.php:1699
 msgid "Site label"
 msgstr ""
 
-#: fail2wp.php:1375
+#: fail2wp.php:1375 fail2wp.php:1700
 msgid "Block user enum"
 msgstr ""
 
-#: fail2wp.php:1376
+#: fail2wp.php:1376 fail2wp.php:1701
 msgid "Block username login"
 msgstr ""
 
-#: fail2wp.php:1377
+#: fail2wp.php:1377 fail2wp.php:1702
 msgid "Secure login messages"
 msgstr ""
 
-#: fail2wp.php:1379
+#: fail2wp.php:1379 fail2wp.php:1704
 msgid "Other settings"
 msgstr ""
 
-#: fail2wp.php:1380
+#: fail2wp.php:1380 fail2wp.php:1705
 msgid "Remove generator info"
 msgstr ""
 
-#: fail2wp.php:1381
+#: fail2wp.php:1381 fail2wp.php:1706
 msgid "Remove feeds"
 msgstr ""
 
-#: fail2wp.php:1382
+#: fail2wp.php:1382 fail2wp.php:1707
 msgid "Remove settings"
 msgstr ""
 
-#: fail2wp.php:1385
+#: fail2wp.php:1385 fail2wp.php:1749
 msgid "Membership warnings"
 msgstr ""
 
-#: fail2wp.php:1386
+#: fail2wp.php:1386 fail2wp.php:1750
 msgid "Check for role"
 msgstr ""
 
-#: fail2wp.php:1387
+#: fail2wp.php:1387 fail2wp.php:1751
 msgid "Force role"
 msgstr ""
 
-#: fail2wp.php:1388
+#: fail2wp.php:1388 fail2wp.php:1752
 msgid "Role to force"
 msgstr ""
 
-#: fail2wp.php:1389
+#: fail2wp.php:1389 fail2wp.php:1753
 msgid "Minimum username length"
 msgstr ""
 
-#: fail2wp.php:1390
+#: fail2wp.php:1390 fail2wp.php:1754
 msgid "Banned usernames"
 msgstr ""
 
-#: fail2wp.php:1391
+#: fail2wp.php:1391 fail2wp.php:1755
 msgid "E-mail must match"
 msgstr ""
 
-#: fail2wp.php:1394
+#: fail2wp.php:1394 fail2wp.php:1758
 msgid "Successful login"
 msgstr ""
 
-#: fail2wp.php:1395
+#: fail2wp.php:1395 fail2wp.php:1759
 msgid "Unsuccessful login"
 msgstr ""
 
-#: fail2wp.php:1397
+#: fail2wp.php:1397 fail2wp.php:1761
 msgid "Log user enum"
 msgstr ""
 
-#: fail2wp.php:1400
+#: fail2wp.php:1400 fail2wp.php:1764
 msgid "Require authentication"
 msgstr ""
 
-#: fail2wp.php:1401
+#: fail2wp.php:1401 fail2wp.php:1765
 msgid "Log blocked requests"
 msgstr ""
 
-#: fail2wp.php:1402
+#: fail2wp.php:1402 fail2wp.php:1766
 msgid "Block index requests"
 msgstr ""
 
-#: fail2wp.php:1403
+#: fail2wp.php:1403 fail2wp.php:1767
 msgid "Block all requests"
 msgstr ""
 
-#: fail2wp.php:1404
+#: fail2wp.php:1404 fail2wp.php:1768
 msgid "Block specific namespaces"
 msgstr ""
 
-#: fail2wp.php:1405
+#: fail2wp.php:1405 fail2wp.php:1769
 msgid "Block specific routes"
 msgstr ""
 
-#: fail2wp.php:1406
+#: fail2wp.php:1406 fail2wp.php:1770
 msgid "Bypass blocks for IPv4"
 msgstr ""
 
-#: fail2wp.php:1407
+#: fail2wp.php:1407 fail2wp.php:1771
 msgid "Bypass blocks for IPv6"
 msgstr ""
 
-#: fail2wp.php:1410
+#: fail2wp.php:1410 fail2wp.php:1800
 msgid "Logging prefix"
 msgstr ""
 
-#: fail2wp.php:1411
+#: fail2wp.php:1411 fail2wp.php:1801
 msgid "Also log to PHP log"
 msgstr ""
 
-#: fail2wp.php:1414
+#: fail2wp.php:1414 fail2wp.php:1804
 msgid "Check for Cloudflare IP"
 msgstr ""
 
-#: fail2wp.php:1415
+#: fail2wp.php:1415 fail2wp.php:1805
 msgid "Cloudflare IPv4"
 msgstr ""
 
-#: fail2wp.php:1416
+#: fail2wp.php:1416 fail2wp.php:1806
 msgid "Cloudflare IPv6"
 msgstr ""
 
-#: fail2wp.php:1579
+#: fail2wp.php:1579 fail2wp.php:2021
 msgid ""
 "The site name to use for logging, defaults to your site name if left empty"
 msgstr ""
 
-#: fail2wp.php:1605
+#: fail2wp.php:1605 fail2wp.php:2047
 msgid "Unknown users"
 msgstr ""
 
-#: fail2wp.php:1612
+#: fail2wp.php:1612 fail2wp.php:2054
 msgid "User enumeration attempts (i.e. your.site/...?author=nnn)"
 msgstr ""
 
-#: fail2wp.php:1620
+#: fail2wp.php:1620 fail2wp.php:2187
 msgid "Warn about odd membership/registration settings"
 msgstr ""
 
-#: fail2wp.php:1638
+#: fail2wp.php:1638 fail2wp.php:2205
 msgid "Check WordPress setting against the value configured here"
 msgstr ""
 
-#: fail2wp.php:1642 fail2wp.php:1671
+#: fail2wp.php:1642 fail2wp.php:1671 fail2wp.php:2209 fail2wp.php:2238
 msgid "No available roles (?)"
 msgstr ""
 
-#: fail2wp.php:1650
+#: fail2wp.php:1650 fail2wp.php:2217
 msgid "Force new user registration settings to a role"
 msgstr ""
 
-#: fail2wp.php:1668
+#: fail2wp.php:1668 fail2wp.php:2235
 msgid "Force WordPress setting to the value configured here"
 msgstr ""
 
-#: fail2wp.php:1677
+#: fail2wp.php:1677 fail2wp.php:2244
 msgid "Minimum length of usernames, 2-200 characters, 0 ignores the setting"
 msgstr ""
 
-#: fail2wp.php:1683
+#: fail2wp.php:1683 fail2wp.php:2250
 msgid "These usernames will be blocked for new user registrations"
 msgstr ""
 
-#: fail2wp.php:1689
+#: fail2wp.php:1689 fail2wp.php:2256
 msgid "E-mail address must match at least one of these for new users"
 msgstr ""
 
-#: fail2wp.php:1695
+#: fail2wp.php:1695 fail2wp.php:2262
 msgid "Remove \"Generator\" output in HTML, RSS, etc."
 msgstr ""
 
-#: fail2wp.php:1702
+#: fail2wp.php:1702 fail2wp.php:2269
 msgid "Remove RSS and Atom feeds"
 msgstr ""
 
-#: fail2wp.php:1710
+#: fail2wp.php:1710 fail2wp.php:2277
 msgid "Remove all plugin settings and data when plugin is uninstalled"
 msgstr ""
 
-#: fail2wp.php:1717
+#: fail2wp.php:1717 fail2wp.php:2284
 msgid "Block user enumeration attempts (i.e. your.site/...?author=nnn)"
 msgstr ""
 
-#: fail2wp.php:1724
+#: fail2wp.php:1724 fail2wp.php:2291
 msgid "Require users to login with their e-mail address"
 msgstr ""
 
-#: fail2wp.php:1731
+#: fail2wp.php:1731 fail2wp.php:2298
 msgid "Change login failure messages to contain less detail"
 msgstr ""
 
-#: fail2wp.php:1739
+#: fail2wp.php:1739 fail2wp.php:2306
 msgid ""
 "Please make sure you understand how these settings can impact the operation "
 "of WordPress and other plugins before making changes to them."
 msgstr ""
 
-#: fail2wp.php:1743
+#: fail2wp.php:1743 fail2wp.php:2310
 msgid "The REST API URL of this site is"
 msgstr ""
 
-#: fail2wp.php:1748
+#: fail2wp.php:1748 fail2wp.php:2315
 msgid "NOTE"
 msgstr ""
 
-#: fail2wp.php:1749
+#: fail2wp.php:1749 fail2wp.php:2316
 msgid ""
 "If \"Require authentication\" is enabled, no REST API calls will be blocked "
 "for logged in users and/or authenticated requests!"
 msgstr ""
 
-#: fail2wp.php:1758
+#: fail2wp.php:1758 fail2wp.php:2325
 msgid ""
 "Please make sure you understand how these settings can impact the operation "
 "of the plugin before making changes to them."
 msgstr ""
 
-#: fail2wp.php:1766
+#: fail2wp.php:1766 fail2wp.php:2333
 msgid "These settings allows the plugin to better interact with Cloudflare."
 msgstr ""
 
-#: fail2wp.php:1768
+#: fail2wp.php:1768 fail2wp.php:2335
 msgid ""
 "If your site is not published via Cloudflare, you can safely ignore these "
 "settings."
 msgstr ""
 
-#: fail2wp.php:1770
+#: fail2wp.php:1770 fail2wp.php:2337
 msgid "For an updated list of Cloudflare IPs, please use this link"
 msgstr ""
 
-#: fail2wp.php:1782
+#: fail2wp.php:1782 fail2wp.php:2349
 msgid ""
 "Require that users be logged in and/or that all REST API calls are "
 "authenticated, this is typically safe to do."
 msgstr ""
 
-#: fail2wp.php:1789
+#: fail2wp.php:1789 fail2wp.php:2356
 msgid ""
 "Blocks all REST API index calls made to this site, this is typically safe to "
 "do."
 msgstr ""
 
-#: fail2wp.php:1796
+#: fail2wp.php:1796 fail2wp.php:2363
 msgid "Log all blocked REST API calls for Fail2ban processing."
 msgstr ""
 
-#: fail2wp.php:1803
+#: fail2wp.php:1803 fail2wp.php:2370
 msgid ""
 "Blocks all REST API calls made to this site, this is typically not safe to "
 "do."
 msgstr ""
 
-#: fail2wp.php:1810
+#: fail2wp.php:1810 fail2wp.php:2377
 msgid "WordPress did not return any available namespaces"
 msgstr ""
 
-#: fail2wp.php:1835 fail2wp.php:1841
+#: fail2wp.php:1835 fail2wp.php:1841 fail2wp.php:2402 fail2wp.php:2408
 msgid "IPs matching these addresses will be allowed to make any REST API call"
 msgstr ""
 
-#: fail2wp.php:1845
+#: fail2wp.php:1845 fail2wp.php:2412
 msgid "The logging prefix, this should normally be left empty"
 msgstr ""
 
-#: fail2wp.php:1851
+#: fail2wp.php:1851 fail2wp.php:2418
 msgid "Log the same information to PHP log using error_log()"
 msgstr ""
 
-#: fail2wp.php:1859
+#: fail2wp.php:1859 fail2wp.php:2426
 msgid "Attempt to unmask real IP when Cloudflare IP is detected"
 msgstr ""
 
-#: fail2wp.php:1866 fail2wp.php:1872
+#: fail2wp.php:1866 fail2wp.php:1872 fail2wp.php:2433 fail2wp.php:2439
 msgid ""
 "IPs matching these addresses will be considerd to be coming from Cloudflare"
 msgstr ""
 
-#: fail2wp.php:2244 fail2wp.php:2248
+#: fail2wp.php:2244 fail2wp.php:2248 fail2wp.php:2879 fail2wp.php:2883
 msgid "Please specify your e-mail address to login"
 msgstr ""
 
-#: fail2wp.php:2266
+#: fail2wp.php:2266 fail2wp.php:2901
 msgid "E-mail address"
 msgstr ""
 
-#: fail2wp.php:2371 fail2wp.php:2404
+#: fail2wp.php:2371 fail2wp.php:2404 fail2wp.php:3599 fail2wp.php:3632
 msgid "Invalid login credentials, please try again."
 msgstr ""
 
-#: fail2wp.php:2408
+#: fail2wp.php:2408 fail2wp.php:3636
 msgid "Lost password"
+msgstr ""
+
+#: fail2wp.php:127
+msgid "XML-RPC services are disabled on this site."
+msgstr ""
+
+#: fail2wp.php:1356
+msgid "Login IP"
+msgstr ""
+
+#: fail2wp.php:1368
+msgid "XMLRPC"
+msgstr ""
+
+#: fail2wp.php:1671
+msgid "(Sweden). We speak Swedish and English"
+msgstr ""
+
+#: fail2wp.php:1713
+msgid "Login IP check enabled"
+msgstr ""
+
+#: fail2wp.php:1719
+msgid "Login IP check testmode"
+msgstr ""
+
+#: fail2wp.php:1725 fail2wp.php:1793
+msgid "Notify fail2ban"
+msgstr ""
+
+#: fail2wp.php:1731
+msgid "Cache DNS lookups"
+msgstr ""
+
+#: fail2wp.php:1737
+msgid "Allow list"
+msgstr ""
+
+#: fail2wp.php:1743
+msgid "Deny list"
+msgstr ""
+
+#: fail2wp.php:1775
+msgid "Disable XMLRPC auth"
+msgstr ""
+
+#: fail2wp.php:1781
+msgid "Disable XMLRPC pingbacks"
+msgstr ""
+
+#: fail2wp.php:1787
+msgid "Disable XMLRPC completely"
+msgstr ""
+
+#: fail2wp.php:2063
+msgid "These settings allows you to allow or block logins from IP addresses."
+msgstr ""
+
+#: fail2wp.php:2065
+msgid ""
+"You may enter single IPv4 and IPv6 addresses, addresses in CIDR notation, "
+"and/or fully qualified hostnames."
+msgstr ""
+
+#: fail2wp.php:2067
+msgid ""
+"Hostnames will be resolved to IP addresses. If you have enabled checking for "
+"Cloudflare IPs, it will be taken into consideration."
+msgstr ""
+
+#: fail2wp.php:2069
+msgid ""
+"You may also use wildcard*.hostna??.com, in which case a reverse name lookup "
+"is performed based on the visitor's IP address."
+msgstr ""
+
+#: fail2wp.php:2073
+msgid "Please make sure your IP address or hostname is on the allow list"
+msgstr ""
+
+#: fail2wp.php:2077
+msgid "Indicated remote IP address"
+msgstr ""
+
+#: fail2wp.php:2081
+msgid "Indicated Cloudflare IP address"
+msgstr ""
+
+#: fail2wp.php:2085
+msgid "Indicated proxy addresses"
+msgstr ""
+
+#: fail2wp.php:2094
+msgid "enable IP address access control for logins"
+msgstr ""
+
+#: fail2wp.php:2101
+msgid ""
+"enable test mode. This will log failures to the PHP error log, but not "
+"actually block the login"
+msgstr ""
+
+#: fail2wp.php:2108
+msgid ""
+"notify fail2ban about failed login attempts based on IP login rules, "
+"automatically disabled if test mode is enabled"
+msgstr ""
+
+#: fail2wp.php:2115
+msgid "minutes (0-10080)"
+msgstr ""
+
+#: fail2wp.php:2123
+msgid "IPs matching these addresses will be allowed to login"
+msgstr ""
+
+#: fail2wp.php:2124
+msgid ""
+"If this list is used, and the remote IP address does not match an entry "
+"here, the login will be denied"
+msgstr ""
+
+#: fail2wp.php:2131
+msgid "IPs matching these addresses will be prevented from logging in"
+msgstr ""
+
+#: fail2wp.php:2138
+msgid "These settings will disable and/or monitor XMLRPC calls to this site"
+msgstr ""
+
+#: fail2wp.php:2141
+msgid ""
+"Please make sure you understand how these settings can impact the operation "
+"of WordPress and other plugins before making changes to them"
+msgstr ""
+
+#: fail2wp.php:2144
+msgid ""
+"If an authenticated XMLRPC call fails due to an unknown username or invalid "
+"password, it will be handled by Fail2WP as a failed user login attempt"
+msgstr ""
+
+#: fail2wp.php:2145
+msgid "Please see \""
+msgstr ""
+
+#: fail2wp.php:2145
+msgid "to configure applicable options"
+msgstr ""
+
+#: fail2wp.php:2148
+msgid ""
+"If XMLRPC pingbacks are disabled, the following XMLRPC methods are removed"
+msgstr ""
+
+#: fail2wp.php:2156
+msgid "disable authenticated XMLRPC calls"
+msgstr ""
+
+#: fail2wp.php:2157 fail2wp.php:2165
+msgid "This will not notify fail2ban"
+msgstr ""
+
+#: fail2wp.php:2164
+msgid "disable XMLRPC pingbacks"
+msgstr ""
+
+#: fail2wp.php:2172
+msgid "disable XMLRPC completely"
+msgstr ""
+
+#: fail2wp.php:2179
+msgid "notify fail2ban about failed XMLRPC activity when completely disabled"
+msgstr ""
+
+#: fail2wp.php:3267 fail2wp.php:3278 fail2wp.php:3292 fail2wp.php:3307
+#: fail2wp.php:3436 fail2wp.php:3441
+msgid "Login attempt would have been allowed"
+msgstr ""
+
+#: fail2wp.php:3319 fail2wp.php:3363 fail2wp.php:3375 fail2wp.php:3390
+#: fail2wp.php:3406
+msgid "Login attempt would have been denied"
+msgstr ""
+
+#: fail2wp.php:3336 fail2wp.php:3337 fail2wp.php:3427 fail2wp.php:3428
+msgid "Logins are temporarily disabled"
+msgstr ""
+
+#: fail2wp.php:3340 fail2wp.php:3431
+msgid "Go to site"
 msgstr ""

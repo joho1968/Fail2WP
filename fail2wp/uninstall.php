@@ -8,7 +8,7 @@
  * @author            Joaquim Homrighausen <joho@webbplatsen.se>
  *
  * uninstall.php
- * Copyright (C) 2021 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021, 2022, 2023 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
