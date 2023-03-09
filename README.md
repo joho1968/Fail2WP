@@ -1,8 +1,8 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.1-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
-Security plugin for WordPress with support for Fail2ban and Cloudflare. Tested with WordPress 5.5+.
+Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4.
 
 ## Description
 
@@ -25,13 +25,15 @@ Basic security functionality includes:
 * Disabling of RSS and Atom feeds
 * Removal of "Generator" information from HTML and feeds
 * Detection of Cloudflare IP addresses for logging of actual IP addresses
+* Blocking/Allowing logins from IP addresses, IP ranges, and/or hostnames
+* Partially or fully disable XMLRPC access
 
 The plugin also plays nicely with Fail2ban, which is an advanced way of blocking IP addresses dynamically upon suspicious behavior.
 
 ### Other notes
 
 * This plugin `may` work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5, 5.6, 5.7, and 5.8` at the time of this writing
+* This plugin has been tested with `WordPress 5.5+, 6.0+, and 6.1.1` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -66,6 +68,15 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Changelog
 
+### 1.2.0
+* Verified with WordPress 6.1.1
+* Added support for allow/deny list for login (IP address, hostname with wildcard support)
+* Added entry in `fail2wp.conf` example fail2ban configuration for allow/deny login
+* Corrected typo in `fail2wp.conf` example fail2ban configuration, CHECK AGAINST YOURS!
+* Added support for HTTP_X_REAL_IP (X-Real-IP) header to "decode" actual remote IP address
+* Added support for partially or fully disabling XMLRPC
+* Added entry in `fail2wp.conf` example fail2ban configuration for XMLRPC access attempts
+
 ### 1.1.1
 * Verified for WordPress 5.8
 
@@ -84,6 +95,10 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Upgrade Notice
 
+### 1.2.0
+* Install the new version and walk through the settings.
+* Check your fail2ban configuration against the supplied sample `fail2wp.conf`!
+
 ### 1.1.1
 * Install the new version, no changes have been made to settings.
 
@@ -97,7 +112,7 @@ This is a hard question to answer. There are no known incompatibilities.
 
 Please see [LICENSE](LICENSE) for a full copy of GPLv2
 
-Copyright (C) 2020 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
+Copyright (C) 2020, 2021, 2022, 2023 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
 
 This file is part of Fail2WP. Fail2WP is free software.
 
