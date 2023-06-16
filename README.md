@@ -1,8 +1,8 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.1-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.1-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
-Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4.
+Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1.x.
 
 ## Description
 
@@ -69,7 +69,7 @@ This is a hard question to answer. There are no known incompatibilities.
 ## Changelog
 
 ### 1.2.0
-* Verified with WordPress 6.1.1
+* Verified with WordPress 6.2.2 and PHP 8.1.20
 * Added support for allow/deny list for login (IP address, hostname with wildcard support)
 * Added entry in `fail2wp.conf` example fail2ban configuration for allow/deny login
 * Corrected typo in `fail2wp.conf` example fail2ban configuration, CHECK AGAINST YOURS!
