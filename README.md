@@ -33,7 +33,8 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 ### Other notes
 
 * This plugin `may` work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5+, 6.0+, and 6.1.1` at the time of this writing
+* This plugin has been tested with `WordPress 5.5+ and 6.2.x` at the time of this writing
+* This plugin has been tested with `PHP 7.2, 7.4, and 8.1.20` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
