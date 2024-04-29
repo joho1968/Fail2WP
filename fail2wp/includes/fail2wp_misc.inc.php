@@ -8,7 +8,7 @@
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
  * fail2wp_misc.inc.php
- * Copyright (C) 2021, 2022, 2023 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -34,19 +34,19 @@ if ( ! defined( 'WPINC' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: (misc) WPINC not defined ' );
     }
-	die;
+    die;
 }
 if ( ! defined( 'ABSPATH' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: (misc) ABSPATH not defined ' );
     }
-	die( '-1' );
+    die( '-1' );
 }
 if ( ! defined( 'FAIL2WP_WORDPRESS_PLUGIN' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: (misc) FAIL2WP_WORDPRESS_PLUGIN not defined ' );
     }
-	die( '-1' );
+    die( '-1' );
 }
 
 
@@ -58,7 +58,6 @@ if ( ! defined( 'FAIL2WP_WORDPRESS_PLUGIN' ) ) {
  * @since 1.1.0
  */
 function fail2wp_misc_delete_all_settings() {
-
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: ' . __FUNCTION__ . ' start' );
     }

@@ -11,7 +11,7 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.2.0
+ * Version:           1.2.1
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -20,7 +20,7 @@
  * Domain Path:       /languages
  *
  * fail2wp.php
- * Copyright (C) 2021,2022,2023 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -44,14 +44,14 @@ namespace fail2wp;
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+    die;
 }
 if ( ! defined( 'ABSPATH' ) ) {
-	die( '-1' );
+    die( '-1' );
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.2.0'                 );
+define( 'FAIL2WP_VERSION',                 '1.2.1'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -138,14 +138,14 @@ class Fail2WP_Disable_XMLRPC {
             header( 'Content-Type: text/xml; charset=' . $charset );
         else
             header( 'Content-Type: text/xml' );
-        header('Date: ' . gmdate('r'));
+        header( 'Date: ' . gmdate( 'r' ) );
         echo $xml;
         echo $error->getXml();
 
         // Instantiate our Fail2WP class so that we can possibly inform
         // fail2ban about the "failure" (if we should)
 
-        $plugin = Fail2WP::getInstance( FAIL2WP_VERSION, FAIL2WP_PLUGINNAME_SLUG, true );
+        $plugin = Fail2WP::getInstance( true );
 
         // Figure out "remote IP"
         $remote_real_ip = '';
@@ -213,20 +213,18 @@ class Fail2WP_Disable_XMLRPC {
  */
 class Fail2WP {
     public static $instance = null;
-    protected $plugin_name;
-    protected $fail2wp_plugin_version;
     protected $fail2wp_mail_headers;                            // @since 1.1.0
     protected $fail2wp_have_mbstring;                           // @since 1.1.0
 
     protected $fail2wp_wp_roles = null;
     protected $fail2wp_wp_roles_enus = null;
     protected $fail2wp_settings_tab = '';
-	protected $fail2wp_prefix;
+    protected $fail2wp_prefix;
     protected $fail2wp_roles_notify;
     protected $fail2wp_roles_warn;
     protected $fail2wp_unknown_warn;
-	protected $fail2wp_settings_dbversion;                      // @since 1.1.0
-	protected $fail2wp_settings_remove;
+    protected $fail2wp_settings_dbversion;                      // @since 1.1.0
+    protected $fail2wp_settings_remove;
     protected $fail2wp_settings_remove_generator;               // @since 1.1.0
     protected $fail2wp_settings_remove_feeds;                   // @since 1.1.0
     protected $fail2wp_also_log_php;
@@ -275,14 +273,14 @@ class Fail2WP {
     protected $fail2wp_hostname_cache;                          // @since 1.2.0
     protected $fail2wp_hostname_cache_updated;                  // @since 1.2.0
 
-    final public static function getInstance( string $version = '', string $slug = '', bool $is_for_xmlrpc = false ) {
+    final public static function getInstance( bool $is_for_xmlrpc = false ) {
         if ( defined( 'FAIL2WP_FLOW_DEBUG') && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
             if ( self::$instance === null ) {
                 error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {instance==null}' );
             }
         }
-        null === self::$instance AND self::$instance = new self( $version, $slug, $is_for_xmlrpc );
+        null === self::$instance AND self::$instance = new self( $is_for_xmlrpc );
         return( self::$instance );
     }
     /**
@@ -302,23 +300,9 @@ class Fail2WP {
     /**
      * Start me up ...
      */
-    public function __construct( string $version = '', string $slug = '', bool $is_for_xmlrpc = false ) {
+    public function __construct( bool $is_for_xmlrpc = false ) {
         if ( defined( 'FAIL2WP_FLOW_DEBUG') && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
-        }
-        if ( empty( $version ) ) {
-            if ( defined( 'FAIL2WP_VERSION' ) ) {
-                $this->fail2wp_plugin_version = FAIL2WP_VERSION;
-            } else {
-                $this->fail2wp_plugin_version = '1.0.0';
-            }
-        } else {
-            $this->fail2wp_plugin_version = $version;
-        }
-        if ( empty( $slug ) ) {
-            $this->plugin_name = FAIL2WP_PLUGINNAME_SLUG;
-        } else {
-            $this->plugin_name = $slug;
         }
         // Setup default mail headers
         $this->fail2wp_mail_headers = array( 'Auto-Submitted: auto-replied',
@@ -733,8 +717,8 @@ class Fail2WP {
      * @since 1.1.0
      */
     public function fail2wp_settings_link( array $links ) {
-        $our_link = '<a href ="' . esc_url( admin_url() . 'options-general.php?page=' . $this->plugin_name ) . '">' .
-                                   esc_html__( 'Settings', $this->plugin_name ) . '</a> ';
+        $our_link = '<a href ="' . esc_url( admin_url() . 'options-general.php?page=' . 'fail2wp' ) . '">' .
+                                   esc_html__( 'Settings', 'fail2wp' ) . '</a> ';
         array_unshift( $links, $our_link );
         return ( $links );
     }
@@ -764,11 +748,11 @@ class Fail2WP {
         // doesn't seem to like this for some reason and will still display
         // the feed content.
         /*
-        wp_die( __( 'This feed has been disabled, please visit', $this->plugin_name ) .
+        wp_die( __( 'This feed has been disabled, please visit', 'fail2wp' ) .
                 ' <a href="' . home_url() . '">' .
                 home_url() .
                 '</a>',
-                __( 'Feed disabled', $this->plugin_name ),
+                __( 'Feed disabled', 'fail2wp' ),
                 array( 'link_url' => home_url(),
                        'link_text' => home_url(),
                        'code' => 'feed_disabled',
@@ -1027,18 +1011,18 @@ class Fail2WP {
         if ( $this->fail2wp_secure_login_message ) {
             if ( ! empty( $errors->errors['username_exists'] ) ) {
                 $errors->remove( 'username_exists' );
-                $errors->add( 'username_exists', esc_html__( 'Invalid username, please try again.', $this->plugin_name ) );
+                $errors->add( 'username_exists', esc_html__( 'Invalid username, please try again.', 'fail2wp' ) );
                 return( $errors );
             } elseif ( ! empty( $errors->errors['email_exists'] ) ) {
                 $errors->remove( 'email_exists' );
-                $errors->add( 'email_exists', esc_html__( 'Invalid e-mail address, please try again.', $this->plugin_name ) );
+                $errors->add( 'email_exists', esc_html__( 'Invalid e-mail address, please try again.', 'fail2wp' ) );
                 return( $errors );
             }
         }
         // Check usernames
         $have_error = false;
         if ( empty( $user_login ) || in_array( $user_login, $this->fail2wp_reguser_username_ban ) ) {
-            $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid username, please try again.', $this->plugin_name ) );
+            $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid username, please try again.', 'fail2wp' ) );
             $have_error = true;
         } elseif ( $this->fail2wp_reguser_username_length > 1 ) {
             if ( $this->fail2wp_have_mbstring ) {
@@ -1049,7 +1033,7 @@ class Fail2WP {
                 $have_error = true;
             }
             if ( $have_error ) {
-                $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid username, please try again.', $this->plugin_name ) );
+                $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid username, please try again.', 'fail2wp' ) );
             }
         }
         if ( ! $have_error ) {
@@ -1077,7 +1061,7 @@ class Fail2WP {
             if ( $invalid_email ) {
                 error_log( FAIL2WP_PLUGINNAME_HUMAN . ': ' .
                            '"' . $user_email . '" is not an acceptable e-mail address' );
-                $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid e-mail address, please try again.', $this->plugin_name ) );
+                $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid e-mail address, please try again.', 'fail2wp' ) );
             }
         }// e-mail
 
@@ -1096,11 +1080,11 @@ class Fail2WP {
     public function fail2wp_admin_alert_new_user_role_forced() {
         echo '<div class="notice notice-error"><br/>'.
              '<span class="dashicons dashicons-shield" style="font-size:24x;"></span>&nbsp;' .
-             esc_html__( 'New user role default has been reset according to your', $this->plugin_name ) .
+             esc_html__( 'New user role default has been reset according to your', 'fail2wp' ) .
              '&nbsp;' .
              FAIL2WP_PLUGINNAME_HUMAN .
              '&nbsp;' .
-             esc_html__( 'settings', $this->plugin_name ) .
+             esc_html__( 'settings', 'fail2wp' ) .
              '!' .
              '<br/><br/>';
         echo '</div>';
@@ -1119,15 +1103,15 @@ class Fail2WP {
             $from_site = $this->fail2wp_get_site_label( true );
         }
         wp_mail( $admin_email,
-                 __( 'Notification about new user role from', $this->plugin_name ) . ' ' . FAIL2WP_PLUGINNAME_HUMAN,
+                 __( 'Notification about new user role from', 'fail2wp' ) . ' ' . FAIL2WP_PLUGINNAME_HUMAN,
                  "\n" .
-                 __( 'This is a notification from', $this->plugin_name ) . ' ' . FAIL2WP_PLUGINNAME_HUMAN .
+                 __( 'This is a notification from', 'fail2wp' ) . ' ' . FAIL2WP_PLUGINNAME_HUMAN .
                  "\n\n" .
-                 __( 'The role for newly registered users has been reset to your configured setting.', $this->plugin_name ) .
+                 __( 'The role for newly registered users has been reset to your configured setting.', 'fail2wp' ) .
                  "\n\n" .
-                 __( 'This notification was sent from the site', $this->plugin_name ) .
+                 __( 'This notification was sent from the site', 'fail2wp' ) .
                  ' ' . $from_site . "\n\n" .
-                 __( 'You may access the admin interface to the site here', $this->plugin_name ) .
+                 __( 'You may access the admin interface to the site here', 'fail2wp' ) .
                  ': ' . admin_url() .
                  "\n"
                  ,
@@ -1144,7 +1128,7 @@ class Fail2WP {
     public function fail2wp_admin_alert_new_users_mismatch() {
         echo '<div class="notice notice-error"><br/>'.
              '<span class="dashicons dashicons-shield" style="font-size:24x;"></span>&nbsp;' .
-             esc_html__( 'User registration is enabled, but the new user role does not match', $this->plugin_name ) .
+             esc_html__( 'User registration is enabled, but the new user role does not match', 'fail2wp' ) .
              '&nbsp;' .
              FAIL2WP_PLUGINNAME_HUMAN .
              '!' .
@@ -1153,11 +1137,11 @@ class Fail2WP {
             // Include link to General settings, if we're not on that page already
             if ( empty( $_SERVER['REQUEST_URI'] ) || basename( $_SERVER['REQUEST_URI'] ) != 'options-general.php' ) {
                 $action = admin_url( 'options-general.php' );
-                echo esc_html__( 'Go to', $this->plugin_name ) .
+                echo esc_html__( 'Go to', 'fail2wp' ) .
                      ' <a href="' . esc_attr( $action ) . '">' .
-                     esc_html__( 'General settings', $this->plugin_name ) .
+                     esc_html__( 'General settings', 'fail2wp' ) .
                      '</a> ' .
-                     esc_html__( 'to check your membership and new user settings.', $this->plugin_name ).
+                     esc_html__( 'to check your membership and new user settings.', 'fail2wp' ).
                      '<br/><br/>';
             }
         }
@@ -1174,7 +1158,7 @@ class Fail2WP {
     public function fail2wp_admin_alert_new_users_admin() {
         echo '<div class="notice notice-error"><br/>'.
              '<span class="dashicons dashicons-shield" style="font-size:24x;"></span>&nbsp;' .
-             esc_html__( 'User registration is enabled, and new users will be administrators', $this->plugin_name ) .
+             esc_html__( 'User registration is enabled, and new users will be administrators', 'fail2wp' ) .
              '&nbsp;' .
              FAIL2WP_PLUGINNAME_HUMAN .
              '!' .
@@ -1183,11 +1167,11 @@ class Fail2WP {
             // Include link to General settings, if we're not on that page already
             if ( empty( $_SERVER['REQUEST_URI'] ) || basename( $_SERVER['REQUEST_URI'] ) != 'options-general.php' ) {
                 $action = admin_url( 'options-general.php' );
-                echo esc_html__( 'Go to', $this->plugin_name ) .
+                echo esc_html__( 'Go to', 'fail2wp' ) .
                      ' <a href="' . esc_attr( $action ) . '">' .
-                     esc_html__( 'General settings', $this->plugin_name ) .
+                     esc_html__( 'General settings', 'fail2wp' ) .
                      '</a> ' .
-                     esc_html__( 'to check your membership and new user settings.', $this->plugin_name ).
+                     esc_html__( 'to check your membership and new user settings.', 'fail2wp' ).
                      '<br/><br/>';
             }
         }
@@ -1203,7 +1187,7 @@ class Fail2WP {
     public function fail2wp_admin_alert_new_users_null() {
         echo '<div class="notice notice-error"><br/>'.
              '<span class="dashicons dashicons-shield" style="font-size:24x;"></span>&nbsp;' .
-             esc_html__( 'User registration is enabled, but no role has been configured', $this->plugin_name ) .
+             esc_html__( 'User registration is enabled, but no role has been configured', 'fail2wp' ) .
              '&nbsp;' .
              FAIL2WP_PLUGINNAME_HUMAN .
              '!' .
@@ -1212,11 +1196,11 @@ class Fail2WP {
             // Include link to General settings, if we're not on that page already
             if ( empty( $_SERVER['REQUEST_URI'] ) || basename( $_SERVER['REQUEST_URI'] ) != 'options-general.php' ) {
                 $action = admin_url( 'options-general.php' );
-                echo esc_html__( 'Go to', $this->plugin_name ) .
+                echo esc_html__( 'Go to', 'fail2wp' ) .
                      ' <a href="' . esc_attr( $action ) . '">' .
-                     esc_html__( 'General settings', $this->plugin_name ) .
+                     esc_html__( 'General settings', 'fail2wp' ) .
                      '</a> ' .
-                     esc_html__( 'to check your membership and new user settings.', $this->plugin_name ).
+                     esc_html__( 'to check your membership and new user settings.', 'fail2wp' ).
                      '<br/><br/>';
             }
         }
@@ -1229,14 +1213,14 @@ class Fail2WP {
      * is returned instead. This could possibly simply return plugin_version in
      * production.
      *
-	 * @since  1.0.0
+     * @since  1.0.0
      * @param  string $filename The file for which we want filemtime()
      * @return string
      */
     protected function resource_mtime( $filename ) {
         $filetime = @ filemtime( $filename );
         if ( $filetime === false ) {
-            $filetime = $this->fail2wp_plugin_version;
+            $filetime = FAIL2WP_VERSION;
         }
         return ( $filetime );
     }
@@ -1297,12 +1281,12 @@ class Fail2WP {
                 if ( ! empty( $role_names_en[$role_v] ) ) {
                     $return_roles_en[$role_v] = $role_names_en[$role_v];
                 } else {
-                    $return_roles_en[$role_v] = __( 'Unknown role', $this->plugin_name ) . ' (' . $role_v . ')';
+                    $return_roles_en[$role_v] = __( 'Unknown role', 'fail2wp' ) . ' (' . $role_v . ')';
                 }
                 if ( ! empty( $role_names[$role_v] ) ) {
                     $return_roles[$role_v] = translate_user_role( $role_names[$role_v] );
                 } else {
-                    $return_roles[$role_v] = __( 'Unknown role', $this->plugin_name ) . ' (' . $role_v . ')';
+                    $return_roles[$role_v] = __( 'Unknown role', 'fail2wp' ) . ' (' . $role_v . ')';
                 }
             }
         } else {
@@ -1335,7 +1319,7 @@ class Fail2WP {
     /**
      * Setup WordPress admin options page.
      *
-	 * @since 1.0.0
+     * @since 1.0.0
      */
     public function fail2wp_admin_page() {
         if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
@@ -1347,42 +1331,42 @@ class Fail2WP {
         $html = '';
         $tab_header ='<div class="wrap">';
         $tab_header .= '<h1><span class="dashicons dashicons-shield" style="font-size:30px"></span>&nbsp;&nbsp;' . FAIL2WP_PLUGINNAME_HUMAN . '</h1>';
-        $tab_header .= '<p>' . esc_html__( 'Provides authentication security functions for WordPress, plays nicely with Fail2ban and Cloudflare', $this->plugin_name ) . '</p>';
+        $tab_header .= '<p>' . esc_html__( 'Provides authentication security functions for WordPress, plays nicely with Fail2ban and Cloudflare', 'fail2wp' ) . '</p>';
         $tab_header .= '<nav class="nav-tab-wrapper">';
         $tab_header .= '<a href="' . $action . '" class="nav-tab' . ( empty( $this->fail2wp_settings_tab ) ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'Basic configuration', $this->plugin_name ) .
+                 esc_html__( 'Basic configuration', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=loginip" class="nav-tab' . ( $this->fail2wp_settings_tab === 'loginip' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'Login IP', $this->plugin_name ) .
+                 esc_html__( 'Login IP', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=newuser" class="nav-tab' . ( $this->fail2wp_settings_tab === 'newuser' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'New users', $this->plugin_name ) .
+                 esc_html__( 'New users', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=logging" class="nav-tab' . ( $this->fail2wp_settings_tab === 'logging' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'User logging', $this->plugin_name ) .
+                 esc_html__( 'User logging', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=restapi" class="nav-tab' . ( $this->fail2wp_settings_tab === 'restapi' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'REST API', $this->plugin_name ) .
+                 esc_html__( 'REST API', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=xmlrpc" class="nav-tab' . ( $this->fail2wp_settings_tab === 'xmlrpc' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'XMLRPC', $this->plugin_name ) .
+                 esc_html__( 'XMLRPC', 'fail2wp' ) .
                  '</a>';
          $tab_header .= '<a href="' . $action . '&tab=advanced" class="nav-tab' . ( $this->fail2wp_settings_tab === 'advanced' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'Advanced', $this->plugin_name ) .
+                 esc_html__( 'Advanced', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=cloudflare" class="nav-tab' . ( $this->fail2wp_settings_tab === 'cloudflare' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'Cloudflare', $this->plugin_name ) .
+                 esc_html__( 'Cloudflare', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=importexport" class="nav-tab' . ( $this->fail2wp_settings_tab === 'importexport' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'Import/Export', $this->plugin_name ) .
+                 esc_html__( 'Import/Export', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=about" class="nav-tab' . ( $this->fail2wp_settings_tab === 'about' ? ' nav-tab-active':'' ) . '">'.
-                 esc_html__( 'About', $this->plugin_name ) .
+                 esc_html__( 'About', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '</nav>';
         if ( ! function_exists( 'openlog' ) || ! function_exists( 'closelog' ) || ! function_exists( 'syslog' ) ) {
             $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
-                           esc_html__( 'One or more of openlog(), closelog(), and/or syslog() seem to be missing on this system', $this->plugin_name ).
+                           esc_html__( 'One or more of openlog(), closelog(), and/or syslog() seem to be missing on this system', 'fail2wp' ).
                            '</strong></p></div>';
         }
         ob_start();
@@ -1404,12 +1388,12 @@ class Fail2WP {
                     if ( $xs != $_POST['fail2wp-import-settings'] ) {
                         // Something was stripped
                         $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
-                                       esc_html__( 'Some data was filtered, please make sure you paste the content exactly as copied', $this->plugin_name ).
+                                       esc_html__( 'Some data was filtered, please make sure you paste the content exactly as copied', 'fail2wp' ).
                                        '</strong></p></div>';
                     } elseif ( strpos( $xs, FAIL2WP_EXPORT_HEADER ) !== 0 || strpos( $xs, FAIL2WP_EXPORT_FOOTER) !== ( strlen( $xs ) - strlen( FAIL2WP_EXPORT_FOOTER ) ) ) {
                         // Header or footer check failed
                         $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
-                                       esc_html__( 'Please make sure you paste the content exactly as copied', $this->plugin_name ).
+                                       esc_html__( 'Please make sure you paste the content exactly as copied', 'fail2wp' ).
                                        '</strong></p></div>';
                     } else {
                         // Remove header/footer, convert, and decode before validating
@@ -1417,12 +1401,12 @@ class Fail2WP {
                         if ( ! is_array( $xs ) || empty( $xs['fail2wp_plugin_version'] ) ) {
                             // Decoding failed
                             $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
-                                           esc_html__( 'Please make sure you paste the content exactly as copied', $this->plugin_name ).
+                                           esc_html__( 'Please make sure you paste the content exactly as copied', 'fail2wp' ).
                                            '</strong></p></div>';
-                        } elseif ( $xs['fail2wp_plugin_version'] !== $this->fail2wp_plugin_version ) {
+                        } elseif ( $xs['fail2wp_plugin_version'] !== FAIL2WP_VERSION ) {
                             // Version mismatch
                             $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
-                                           esc_html__( 'Plugin version mismatch. You can only import exported data from the same version as the one currently installed', $this->plugin_name ).
+                                           esc_html__( 'Plugin version mismatch. You can only import exported data from the same version as the one currently installed', 'fail2wp' ).
                                            '</strong></p></div>';
                         } else {
                             // Good to go
@@ -1488,47 +1472,47 @@ class Fail2WP {
                     // Possibly show warning/notices from import
                     if ( ! empty( $import_result ) ) {
                         $import_result = '<p>' .
-                                         esc_html__( 'The following settings were ignored during the import', $this->plugin_name ) .
+                                         esc_html__( 'The following settings were ignored during the import', 'fail2wp' ) .
                                          ':<br/>' .
                                          $import_result .
                                          '</p>';
                         $html .= $import_result;
                     } else {
                         $html .= '<p>' .
-                                 esc_html__( 'Settings were successfully imported', $this->plugin_name ) .
+                                 esc_html__( 'Settings were successfully imported', 'fail2wp' ) .
                                  '</p>';
                         if ( $warn_about_site_label ) {
                             $html .= '<p>' .
-                                     esc_html__( 'The setting "Site label" may need manual correction', $this->plugin_name ) .
+                                     esc_html__( 'The setting "Site label" may need manual correction', 'fail2wp' ) .
                                      '</p>';
                         }
                     }
                 }
             }// import settings
             if ( ! $do_import ) {
-                $html .= '<p>' . esc_html__( 'This tab can be used to import and export settings for the plugin.', $this->plugin_name ) . '</p>';
+                $html .= '<p>' . esc_html__( 'This tab can be used to import and export settings for the plugin.', 'fail2wp' ) . '</p>';
                 $html .= '<table class="form-table" role="presentation">';
                 $html .= '<tr><th scope="row">'.
                          '<label for="fail2wp-import-settings">' .
-                         esc_html__( 'Import settings', $this->plugin_name ) .
+                         esc_html__( 'Import settings', 'fail2wp' ) .
                          '</label></th></td><td>' .
                          '<textarea name="fail2wp-import-settings" id="fail2wp-import-settings" rows="10" cols="30" class="large-text code" required>' .
                          '</textarea>' .
                          '<p class="description">' .
-                         esc_html__( 'Paste settings in this field to import them', $this->plugin_name ) .
+                         esc_html__( 'Paste settings in this field to import them', 'fail2wp' ) .
                          '</p>' .
                          '</td></tr>';
                 $html .= '<tr><td></td><td>' .
-                submit_button( esc_html__( 'Import settings', $this->plugin_name), 'primary', 'fail2wpimport' );
+                submit_button( esc_html__( 'Import settings', 'fail2wp'), 'primary', 'fail2wpimport' );
                 $html .= ob_get_contents();
                 $html .= '</td></tr>';
                 $html .= '<tr><th scope="row">'.
                          '<label for="fail2wp-export-settings">' .
-                         esc_html__( 'Export settings', $this->plugin_name ) .
+                         esc_html__( 'Export settings', 'fail2wp' ) .
                          '</label></th></td><td>' .
                          '<textarea name="fail2wp-export-settings" id="fail2wp-export-settings" rows="10" cols="30" class="large-text code" readonly>';
                 $config_data = array(
-                    'fail2wp_plugin_version'                => $this->fail2wp_plugin_version,
+                    'fail2wp_plugin_version'                => FAIL2WP_VERSION,
                     'fail2wp_site_label'                    => $this->fail2wp_site_label,
                     'fail2wp_prefix'                        => $this->fail2wp_prefix,
                     'fail2wp_roles_notify'                  => $this->fail2wp_roles_notify,
@@ -1580,7 +1564,7 @@ class Fail2WP {
                     $json_data = '';
                     // Could not encode data
                     $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
-                                   esc_html__( 'Unable to create data for export', $this->plugin_name ).
+                                   esc_html__( 'Unable to create data for export', 'fail2wp' ).
                                    '</strong></p></div>';
                 }
                 if ( ! empty( $json_data ) ) {
@@ -1588,7 +1572,7 @@ class Fail2WP {
                 }
                 $html .= '</textarea>' .
                          '<p class="description">' .
-                         esc_html__( 'Copy the text in this field to export your settings to another site', $this->plugin_name ) .
+                         esc_html__( 'Copy the text in this field to export your settings to another site', 'fail2wp' ) .
                          '</p>' .
                          '</td></tr>';
                 $html .= '</table>';
@@ -1616,9 +1600,9 @@ class Fail2WP {
                     break;
                 case 'logging':
                     $html .= '<p>' .
-                             esc_html__( "This is logged to the system's authentication log, which allows Fail2ban to dynamically block offending IP addresses.", $this->plugin_name ) .
+                             esc_html__( "This is logged to the system's authentication log, which allows Fail2ban to dynamically block offending IP addresses.", 'fail2wp' ) .
                              ' '.
-                             esc_html__( 'Configuration of the Fail2ban system daemon, or similar, must be done outside of WordPress for this to have any effect.', $this->plugin_name ) .
+                             esc_html__( 'Configuration of the Fail2ban system daemon, or similar, must be done outside of WordPress for this to have any effect.', 'fail2wp' ) .
                              '</p>';
                     settings_fields( 'fail2wp_settings_notify' );
                     do_settings_sections( 'fail2wp_settings_notify' );
@@ -1656,30 +1640,43 @@ class Fail2WP {
     /**
      * Display about/support.
      *
-	 * @since  1.0.0
+     * @since  1.0.0
      */
     public function fail2wp_about_page() {
         echo '<div class="tab-content">';
         echo '<div class="fail2wp-config-header">'.
-             '<p>'  . esc_html__( 'Thank you for installing', $this->plugin_name ) .' Fail2WP ' . FAIL2WP_VERSION . '!' . ' '.
-                      esc_html__( 'This plugin provides security functions and integration between WordPress and', $this->plugin_name ) . ' <a href="https://www.fail2ban.org" class="fail2wp-ext-link" target="_blank"> Fail2ban</a>.</p>'.
+             '<p>'  . esc_html__( 'Thank you for installing', 'fail2wp' ) .' Fail2WP ' . FAIL2WP_VERSION . '!' . ' '.
+                      esc_html__( 'This plugin provides security functions and integration between WordPress and', 'fail2wp' ) . ' <a href="https://www.fail2ban.org" class="fail2wp-ext-link" target="_blank"> Fail2ban</a>.</p>'.
              '</div>';
         echo '<div class="fail2wp-config-section">'.
              '<p>'  . '<img class="fail2wp-wps-logo" alt="" src="' . plugin_dir_url( __FILE__ ) . 'img/webbplatsen_logo.png" />' .
-                      esc_html__( 'Commercial support and customizations for this plugin is available from', $this->plugin_name ) .
+                      esc_html__( 'Commercial support and customizations for this plugin is available from', 'fail2wp' ) .
                       ' <a class="fail2wp-ext-link" href="https://webbplatsen.se" target="_blank">WebbPlatsen i Sverige AB</a> '.
-                      esc_html__('(Sweden). We speak Swedish and English', $this->plugin_name ) . ' :-)' .
+                      esc_html__('(Sweden). We speak Swedish and English', 'fail2wp' ) . ' :-)' .
                       '<br/><br/>' .
-                      esc_html__( 'The plugin is written by Joaquim Homrighausen and sponsored by WebbPlatsen i Sverige AB.', $this->plugin_name ) .
+                      esc_html__( 'The plugin is written by Joaquim Homrighausen and sponsored by WebbPlatsen i Sverige AB.', 'fail2wp' ) .
              '</p>' .
-             '<p>'  . esc_html__( 'If you find this plugin useful, the author is happy to receive a donation, good review, or just a kind word.', $this->plugin_name ) . ' ' .
-                      esc_html__( 'If there is something you feel to be missing from this plugin, or if you have found a problem with the code or a feature, please do not hesitate to reach out to', $this->plugin_name ) .
+             '<p>'  . esc_html__( 'If you find this plugin useful, the author is happy to receive a donation, good review, or just a kind word.', 'fail2wp' ) . ' ' .
+                      esc_html__( 'If there is something you feel to be missing from this plugin, or if you have found a problem with the code or a feature, please do not hesitate to reach out to', 'fail2wp' ) .
                                   ' <a class="fail2wp-ext-link" href="mailto:support@webbplatsen.se">support@webbplatsen.se</a>' . ' '.
              '</p>' .
              '<p>'  .
-                      esc_html__( 'There is more documentation available at', $this->plugin_name ) . ' ' .
+                      esc_html__( 'There is more documentation available at', 'fail2wp' ) . ' ' .
                                   '<a class="fail2wp-ext-link" target="_blank" href="https://code.webbplatsen.net/documentation/fail2wp/">'.
                                   'code.webbplatsen.net/documentation/fail2wp/</a>' .
+             '</p>' .
+             '<p style="margin-top:20px;">' .
+                 '<h3>' . esc_html__( 'Other plugins', 'fail2wp' ) . '</h3>' .
+                 '<p class="cb2fa-row">' .
+                     '<a href="https://wordpress.org/plugins/cloudbridge-mattermost" target="_blank" class="fail2wp-ext-link">Cloudbridge Mattermost</a>' .
+                     '<br/>' .
+                     esc_html__( 'Plugin that provides integration with Mattermost, including notifications and OAuth2 authentication', 'fail2wp' ) . '.' .
+                 '</p>' .
+                 '<p class="cb2fa-row">' .
+                     '<a href="https://wordpress.org/plugins/easymap" target="_blank" class="fail2wp-ext-link">EasyMap</a>' .
+                     '<br/>' .
+                     esc_html__( 'Plugin that provides uncomplicated map functionality', 'fail2wp' ) . '.' .
+                '</p>' .
              '</p>' .
              '</div>';
         echo '</div>';
@@ -1689,121 +1686,121 @@ class Fail2WP {
     /**
      * Display settings.
      *
-	 * @since  1.0.0
+     * @since  1.0.0
      */
     public function fail2wp_settings() {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
             return;
         }
         add_settings_section( 'fail2wp-settings', '', false, 'fail2wp-settings' );
-          add_settings_field( 'fail2wp-site-label', esc_html__( 'Site label', $this->plugin_name ), [$this, 'fail2wp_setting_site_label'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-site-label'] );
-          add_settings_field( 'fail2wp-block-user-enum', esc_html__( 'Block user enum', $this->plugin_name ), [$this, 'fail2wp_setting_block_enums'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-block-user-enum'] );
-          add_settings_field( 'fail2wp-block-username-login', esc_html__( 'Block username login', $this->plugin_name ), [$this, 'fail2wp_setting_block_username_login'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-block-username-login'] );
-          add_settings_field( 'fail2wp-secure-login-message', esc_html__( 'Secure login messages', $this->plugin_name ), [$this, 'fail2wp_setting_secure_login_messages'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-secure-login-message'] );
+          add_settings_field( 'fail2wp-site-label', esc_html__( 'Site label', 'fail2wp' ), [$this, 'fail2wp_setting_site_label'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-site-label'] );
+          add_settings_field( 'fail2wp-block-user-enum', esc_html__( 'Block user enum', 'fail2wp' ), [$this, 'fail2wp_setting_block_enums'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-block-user-enum'] );
+          add_settings_field( 'fail2wp-block-username-login', esc_html__( 'Block username login', 'fail2wp' ), [$this, 'fail2wp_setting_block_username_login'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-block-username-login'] );
+          add_settings_field( 'fail2wp-secure-login-message', esc_html__( 'Secure login messages', 'fail2wp' ), [$this, 'fail2wp_setting_secure_login_messages'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-secure-login-message'] );
 
-        add_settings_section( 'fail2wp_section_other', esc_html__( 'Other settings', $this->plugin_name ), false, 'fail2wp-settings' );
-          add_settings_field( 'fail2wp-settings-remove-generator', esc_html__( 'Remove generator info', $this->plugin_name ), [$this, 'fail2wp_setting_remove_generator'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove-generator'] );
-          add_settings_field( 'fail2wp-settings-remove-feeds', esc_html__( 'Remove feeds', $this->plugin_name ), [$this, 'fail2wp_setting_remove_feeds'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove-feeds'] );
-          add_settings_field( 'fail2wp-settings-remove', esc_html__( 'Remove settings', $this->plugin_name ), [$this, 'fail2wp_setting_remove'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove'] );
+        add_settings_section( 'fail2wp_section_other', esc_html__( 'Other settings', 'fail2wp' ), false, 'fail2wp-settings' );
+          add_settings_field( 'fail2wp-settings-remove-generator', esc_html__( 'Remove generator info', 'fail2wp' ), [$this, 'fail2wp_setting_remove_generator'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove-generator'] );
+          add_settings_field( 'fail2wp-settings-remove-feeds', esc_html__( 'Remove feeds', 'fail2wp' ), [$this, 'fail2wp_setting_remove_feeds'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove-feeds'] );
+          add_settings_field( 'fail2wp-settings-remove', esc_html__( 'Remove settings', 'fail2wp' ), [$this, 'fail2wp_setting_remove'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove'] );
         add_settings_section( 'fail2wp_section_loginip',
                               '',
                               [$this, 'fail2wp_settings_loginip_callback'],
                               'fail2wp_settings_loginip' );
           add_settings_field( 'fail2wp-loginip-enable',
-                              esc_html__( 'Login IP check enabled', $this->plugin_name ),
+                              esc_html__( 'Login IP check enabled', 'fail2wp' ),
                               [$this, 'fail2wp_setting_loginip_enable'],
                               'fail2wp_settings_loginip',
                               'fail2wp_section_loginip',
                               ['label_for' => 'fail2wp-loginip-enable'] );
           add_settings_field( 'fail2wp-loginip-testmode',
-                              esc_html__( 'Login IP check testmode', $this->plugin_name ),
+                              esc_html__( 'Login IP check testmode', 'fail2wp' ),
                               [$this, 'fail2wp_setting_loginip_testmode'],
                               'fail2wp_settings_loginip',
                               'fail2wp_section_loginip',
                               ['label_for' => 'fail2wp-loginip-testmode'] );
           add_settings_field( 'fail2wp-loginip-inform-fail2ban',
-                              esc_html__( 'Notify fail2ban', $this->plugin_name ),
+                              esc_html__( 'Notify fail2ban', 'fail2wp' ),
                               [$this, 'fail2wp_setting_loginip_inform_fail2ban'],
                               'fail2wp_settings_loginip',
                               'fail2wp_section_loginip',
                               ['label_for' => 'fail2wp-loginip-inform-fail2ban'] );
           add_settings_field( 'fail2wp-loginip-dnscache',
-                              esc_html__( 'Cache DNS lookups', $this->plugin_name ),
+                              esc_html__( 'Cache DNS lookups', 'fail2wp' ),
                               [$this, 'fail2wp_setting_loginip_dnscache'],
                               'fail2wp_settings_loginip',
                               'fail2wp_section_loginip',
                               ['label_for' => 'fail2wp-loginip-dnscache'] );
           add_settings_field( 'fail2wp-loginip-allow',
-                              esc_html__( 'Allow list', $this->plugin_name ),
+                              esc_html__( 'Allow list', 'fail2wp' ),
                               [$this, 'fail2wp_settings_loginip_allow'],
                               'fail2wp_settings_loginip',
                               'fail2wp_section_loginip',
                               ['label_for' => 'fail2wp-loginip-allow'] );
           add_settings_field( 'fail2wp-loginip-deny',
-                              esc_html__( 'Deny list', $this->plugin_name ),
+                              esc_html__( 'Deny list', 'fail2wp' ),
                               [$this, 'fail2wp_settings_loginip_deny'],
                               'fail2wp_settings_loginip',
                               'fail2wp_section_loginip',
                               ['label_for' => 'fail2wp-loginip-deny'] );
         add_settings_section( 'fail2wp_section_newuser', '', false, 'fail2wp_settings_newuser' );
-          add_settings_field( 'fail2wp-reguser-warn', esc_html__( 'Membership warnings', $this->plugin_name ), [$this, 'fail2wp_setting_reguser_warn'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-warn'] );
-          add_settings_field( 'fail2wp-reguser-warn-role', esc_html__( 'Check for role', $this->plugin_name ), [$this, 'fail2wp_setting_reguser_warn_role'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-warn-role'] );
-          add_settings_field( 'fail2wp-reguser-force', esc_html__( 'Force role', $this->plugin_name ), [$this, 'fail2wp_setting_reguser_force'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-force'] );
-          add_settings_field( 'fail2wp-reguser-force-role', esc_html__( 'Role to force', $this->plugin_name ), [$this, 'fail2wp_setting_reguser_force_role'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-force-role'] );
-          add_settings_field( 'fail2wp-reguser-username-length', esc_html__( 'Minimum username length', $this->plugin_name ), [$this, 'fail2wp_settings_reguser_username_length'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-username-length'] );
-          add_settings_field( 'fail2wp-reguser-username-ban', esc_html__( 'Banned usernames', $this->plugin_name ), [$this, 'fail2wp_settings_reguser_username_ban'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-username-ban'] );
-          add_settings_field( 'fail2wp-reguser-useremail-require', esc_html__( 'E-mail must match', $this->plugin_name ), [$this, 'fail2wp_settings_reguser_useremail_require'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-useremail-require'] );
+          add_settings_field( 'fail2wp-reguser-warn', esc_html__( 'Membership warnings', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_warn'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-warn'] );
+          add_settings_field( 'fail2wp-reguser-warn-role', esc_html__( 'Check for role', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_warn_role'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-warn-role'] );
+          add_settings_field( 'fail2wp-reguser-force', esc_html__( 'Force role', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_force'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-force'] );
+          add_settings_field( 'fail2wp-reguser-force-role', esc_html__( 'Role to force', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_force_role'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-force-role'] );
+          add_settings_field( 'fail2wp-reguser-username-length', esc_html__( 'Minimum username length', 'fail2wp' ), [$this, 'fail2wp_settings_reguser_username_length'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-username-length'] );
+          add_settings_field( 'fail2wp-reguser-username-ban', esc_html__( 'Banned usernames', 'fail2wp' ), [$this, 'fail2wp_settings_reguser_username_ban'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-username-ban'] );
+          add_settings_field( 'fail2wp-reguser-useremail-require', esc_html__( 'E-mail must match', 'fail2wp' ), [$this, 'fail2wp_settings_reguser_useremail_require'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-useremail-require'] );
 
         add_settings_section( 'fail2wp_settings_notify', '', false, 'fail2wp_settings_notify' );
-          add_settings_field( 'fail2wp-roles-notify', esc_html__( 'Successful login', $this->plugin_name ), [$this, 'fail2wp_setting_roles_notify'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-roles-notify'] );
-          add_settings_field( 'fail2wp-roles-warn', esc_html__( 'Unsuccessful login', $this->plugin_name ), [$this, 'fail2wp_setting_roles_warn'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-roles-warn'] );
+          add_settings_field( 'fail2wp-roles-notify', esc_html__( 'Successful login', 'fail2wp' ), [$this, 'fail2wp_setting_roles_notify'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-roles-notify'] );
+          add_settings_field( 'fail2wp-roles-warn', esc_html__( 'Unsuccessful login', 'fail2wp' ), [$this, 'fail2wp_setting_roles_warn'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-roles-warn'] );
           add_settings_field( 'fail2wp-unknown-warn', '', [$this, 'fail2wp_setting_unknown_notify'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-unknown-warn'] );
-          add_settings_field( 'fail2wp-log-user-enum', esc_html__( 'Log user enum', $this->plugin_name ), [$this, 'fail2wp_setting_log_enums'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-log-user-enum'] );
+          add_settings_field( 'fail2wp-log-user-enum', esc_html__( 'Log user enum', 'fail2wp' ), [$this, 'fail2wp_setting_log_enums'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-log-user-enum'] );
 
         add_settings_section( 'fail2wp_section_restapi', '', [$this, 'fail2wp_settings_restapi_callback'], 'fail2wp_settings_restapi' );
-          add_settings_field( 'fail2wp-rest-filter-require-authenticated', esc_html__( 'Require authentication', $this->plugin_name ), [$this, 'fail2wp_setting_rest_filter_require_authenticated'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-require-authenticated'] );
-          add_settings_field( 'fail2wp-rest-filter-log-blocked', esc_html__( 'Log blocked requests', $this->plugin_name ), [$this, 'fail2wp_setting_rest_filter_log_blocked'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-log-blocked'] );
-          add_settings_field( 'fail2wp-rest-filter-block-index', esc_html__( 'Block index requests', $this->plugin_name ), [$this, 'fail2wp_setting_rest_filter_block_index'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-index'] );
-          add_settings_field( 'fail2wp-rest-filter-block-all', esc_html__( 'Block all requests', $this->plugin_name ), [$this, 'fail2wp_setting_rest_filter_block_all'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-all'] );
-          add_settings_field( 'fail2wp-rest-filter-block-ns', esc_html__( 'Block specific namespaces', $this->plugin_name ),   [$this, 'fail2wp_setting_rest_filter_block_ns'],  'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-ns'] );
-          add_settings_field( 'fail2wp-rest-filter-block-routes', esc_html__( 'Block specific routes', $this->plugin_name ),   [$this, 'fail2wp_setting_rest_filter_block_routes'],  'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-routes'] );
-          add_settings_field( 'fail2wp-rest-filter-ipv4-bypass', esc_html__( 'Bypass blocks for IPv4', $this->plugin_name ), [$this, 'fail2wp_settings_rest_filter_bypass_ipv4'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-ipv4-bypass'] );
-          add_settings_field( 'fail2wp-rest-filter-ipv6-bypass', esc_html__( 'Bypass blocks for IPv6', $this->plugin_name ), [$this, 'fail2wp_settings_rest_filter_bypass_ipv6'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-ipv6-bypass'] );
+          add_settings_field( 'fail2wp-rest-filter-require-authenticated', esc_html__( 'Require authentication', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_require_authenticated'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-require-authenticated'] );
+          add_settings_field( 'fail2wp-rest-filter-log-blocked', esc_html__( 'Log blocked requests', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_log_blocked'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-log-blocked'] );
+          add_settings_field( 'fail2wp-rest-filter-block-index', esc_html__( 'Block index requests', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_block_index'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-index'] );
+          add_settings_field( 'fail2wp-rest-filter-block-all', esc_html__( 'Block all requests', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_block_all'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-all'] );
+          add_settings_field( 'fail2wp-rest-filter-block-ns', esc_html__( 'Block specific namespaces', 'fail2wp' ),   [$this, 'fail2wp_setting_rest_filter_block_ns'],  'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-ns'] );
+          add_settings_field( 'fail2wp-rest-filter-block-routes', esc_html__( 'Block specific routes', 'fail2wp' ),   [$this, 'fail2wp_setting_rest_filter_block_routes'],  'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-routes'] );
+          add_settings_field( 'fail2wp-rest-filter-ipv4-bypass', esc_html__( 'Bypass blocks for IPv4', 'fail2wp' ), [$this, 'fail2wp_settings_rest_filter_bypass_ipv4'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-ipv4-bypass'] );
+          add_settings_field( 'fail2wp-rest-filter-ipv6-bypass', esc_html__( 'Bypass blocks for IPv6', 'fail2wp' ), [$this, 'fail2wp_settings_rest_filter_bypass_ipv6'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-ipv6-bypass'] );
 
         add_settings_section( 'fail2wp_section_xmlrpc', '', [$this, 'fail2wp_settings_xmlrpc_callback'], 'fail2wp_settings_xmlrpc' );
           add_settings_field( 'fail2wp-xmlrpc-disable',
-                              esc_html__( 'Disable XMLRPC auth', $this->plugin_name ),
+                              esc_html__( 'Disable XMLRPC auth', 'fail2wp' ),
                               [$this, 'fail2wp_setting_xmlrpc_disable'],
                               'fail2wp_settings_xmlrpc',
                               'fail2wp_section_xmlrpc',
                               ['label_for' => 'fail2wp-xmlrpc-disable'] );
           add_settings_field( 'fail2wp-xmlrpc-disable-pingback',
-                              esc_html__( 'Disable XMLRPC pingbacks', $this->plugin_name ),
+                              esc_html__( 'Disable XMLRPC pingbacks', 'fail2wp' ),
                               [$this, 'fail2wp_setting_xmlrpc_disable_pingback'],
                               'fail2wp_settings_xmlrpc',
                               'fail2wp_section_xmlrpc',
                               ['label_for' => 'fail2wp-xmlrpc-disable-pingback'] );
           add_settings_field( 'fail2wp-xmlrpc-disable-everything',
-                              esc_html__( 'Disable XMLRPC completely', $this->plugin_name ),
+                              esc_html__( 'Disable XMLRPC completely', 'fail2wp' ),
                               [$this, 'fail2wp_setting_xmlrpc_disable_everything'],
                               'fail2wp_settings_xmlrpc',
                               'fail2wp_section_xmlrpc',
                               ['label_for' => 'fail2wp-xmlrpc-disable-everything'] );
           add_settings_field( 'fail2wp-xmlrpc-inform-fail2ban',
-                              esc_html__( 'Notify fail2ban', $this->plugin_name ),
+                              esc_html__( 'Notify fail2ban', 'fail2wp' ),
                               [$this, 'fail2wp_setting_xmlrpc_inform_fail2ban'],
                               'fail2wp_settings_xmlrpc',
                               'fail2wp_section_xmlrpc',
                               ['label_for' => 'fail2wp-xmlrpc-inform-fail2ban'] );
 
         add_settings_section( 'fail2wp_settings_advanced', '', [$this, 'fail2wp_settings_advanced_callback'], 'fail2wp_settings_advanced' );
-          add_settings_field( 'fail2wp-prefix', esc_html__( 'Logging prefix', $this->plugin_name ), [$this, 'fail2wp_settings_prefix'], 'fail2wp_settings_advanced', 'fail2wp_settings_advanced', ['label_for' => 'fail2wp-prefix'] );
-          add_settings_field( 'fail2wp-also-log-php', esc_html__( 'Also log to PHP log', $this->plugin_name ), [$this, 'fail2wp_setting_also_log_php'], 'fail2wp_settings_advanced', 'fail2wp_settings_advanced', ['label_for' => 'fail2wp-also-log-php'] );
+          add_settings_field( 'fail2wp-prefix', esc_html__( 'Logging prefix', 'fail2wp' ), [$this, 'fail2wp_settings_prefix'], 'fail2wp_settings_advanced', 'fail2wp_settings_advanced', ['label_for' => 'fail2wp-prefix'] );
+          add_settings_field( 'fail2wp-also-log-php', esc_html__( 'Also log to PHP log', 'fail2wp' ), [$this, 'fail2wp_setting_also_log_php'], 'fail2wp_settings_advanced', 'fail2wp_settings_advanced', ['label_for' => 'fail2wp-also-log-php'] );
 
         add_settings_section( 'fail2wp_settings_cloudflare', '', [$this, 'fail2wp_settings_cloudflare_callback'], 'fail2wp_settings_cloudflare' );
-          add_settings_field( 'fail2wp-cloudflare-check', esc_html__( 'Check for Cloudflare IP', $this->plugin_name ), [$this, 'fail2wp_setting_cloudflare_check'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-check'] );
-          add_settings_field( 'fail2wp-cloudflare-ipv4', esc_html__( 'Cloudflare IPv4', $this->plugin_name ), [$this, 'fail2wp_settings_cloudflare_ipv4'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv4'] );
-          add_settings_field( 'fail2wp-cloudflare-ipv6', esc_html__( 'Cloudflare IPv6', $this->plugin_name ), [$this, 'fail2wp_settings_cloudflare_ipv6'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv6'] );
+          add_settings_field( 'fail2wp-cloudflare-check', esc_html__( 'Check for Cloudflare IP', 'fail2wp' ), [$this, 'fail2wp_setting_cloudflare_check'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-check'] );
+          add_settings_field( 'fail2wp-cloudflare-ipv4', esc_html__( 'Cloudflare IPv4', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_ipv4'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv4'] );
+          add_settings_field( 'fail2wp-cloudflare-ipv6', esc_html__( 'Cloudflare IPv6', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_ipv6'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv6'] );
 
         register_setting( 'fail2wp-settings', 'fail2wp-site-label', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_site_label']] );
         register_setting( 'fail2wp-settings', 'fail2wp-block-user-enum' );
@@ -2018,7 +2015,7 @@ class Fail2WP {
             echo ' placeholder="' . esc_attr( $placeholder ) . '"';
         }
         echo ' />';
-        echo '<p class="description">' . esc_html__( 'The site name to use for logging, defaults to your site name if left empty', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'The site name to use for logging, defaults to your site name if left empty', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_setting_roles_notify($args) {
         $available_roles = $this->fail2wp_get_wp_roles();
@@ -2044,14 +2041,14 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-unknown-warn">';
         echo '<input type="checkbox" name="fail2wp-unknown-warn" id="fail2wp-unknown-warn" value="1" ' . ( checked( $this->fail2wp_unknown_warn, 1, false ) ) . '/>';
-        echo esc_html__( 'Unknown users', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Unknown users', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_log_enums() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-log-user-enum">';
         echo '<input type="checkbox" name="fail2wp-log-user-enum" id="fail2wp-log-user-enum" value="1" ' . ( checked( $this->fail2wp_log_user_enum, 1, false ) ) . '/>';
-        echo esc_html__( 'User enumeration attempts (i.e. your.site/...?author=nnn)', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'User enumeration attempts (i.e. your.site/...?author=nnn)', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     // @since 1.2.0
@@ -2060,29 +2057,29 @@ class Fail2WP {
             return;
         }
         echo '<p>'.
-             esc_html__( 'These settings allows you to allow or block logins from IP addresses.', $this->plugin_name ).
+             esc_html__( 'These settings allows you to allow or block logins from IP addresses.', 'fail2wp' ).
              '</p><p>' .
-             esc_html__( 'You may enter single IPv4 and IPv6 addresses, addresses in CIDR notation, and/or fully qualified hostnames.', $this->plugin_name ).
+             esc_html__( 'You may enter single IPv4 and IPv6 addresses, addresses in CIDR notation, and/or fully qualified hostnames.', 'fail2wp' ).
              ' ' .
-             esc_html__( 'Hostnames will be resolved to IP addresses. If you have enabled checking for Cloudflare IPs, it will be taken into consideration.', $this->plugin_name ) .
+             esc_html__( 'Hostnames will be resolved to IP addresses. If you have enabled checking for Cloudflare IPs, it will be taken into consideration.', 'fail2wp' ) .
              ' ' .
-             esc_html__( 'You may also use wildcard*.hostna??.com, in which case a reverse name lookup is performed based on the visitor\'s IP address.', $this->plugin_name ) .
+             esc_html__( 'You may also use wildcard*.hostna??.com, in which case a reverse name lookup is performed based on the visitor\'s IP address.', 'fail2wp' ) .
              '</p>';
         if ( $this->fail2wp_loginip_enable ) {
             echo '<p><span  style="color:#ff0000;">' .
-                 esc_html__( 'Please make sure your IP address or hostname is on the allow list', $this->plugin_name ) .
+                 esc_html__( 'Please make sure your IP address or hostname is on the allow list', 'fail2wp' ) .
                  '.</span> ';
             // Remote IP
             $remote_ip = $_SERVER['REMOTE_ADDR'];
-            echo esc_html__( 'Indicated remote IP address', $this->plugin_name ) . ': <b>' . esc_html( $remote_ip ) . '</b>. ';
+            echo esc_html__( 'Indicated remote IP address', 'fail2wp' ) . ': <b>' . esc_html( $remote_ip ) . '</b>. ';
             // Cloudflare
             $remote_ip_cf = $this->fail2wp_do_cloudflare_lookup( $remote_ip );
             if ( $remote_ip != $remote_ip_cf ) {
-                echo esc_html__( 'Indicated Cloudflare IP address', $this->plugin_name ) . ': <b>' . esc_html( $remote_ip_cf ) . '</b>. ';
+                echo esc_html__( 'Indicated Cloudflare IP address', 'fail2wp' ) . ': <b>' . esc_html( $remote_ip_cf ) . '</b>. ';
             }
             // Possibly remote IP, if proxied
             if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-                echo esc_html__( 'Indicated proxy addresses', $this->plugin_name ) . ' (X-Real-IP): <b>' . esc_html( $_SERVER['HTTP_X_REAL_IP'] ) . '</b>. ';
+                echo esc_html__( 'Indicated proxy addresses', 'fail2wp' ) . ' (X-Real-IP): <b>' . esc_html( $_SERVER['HTTP_X_REAL_IP'] ) . '</b>. ';
             }
             echo '</p>';
         }
@@ -2091,28 +2088,28 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-loginip-enable">';
         echo '<input type="checkbox" name="fail2wp-loginip-enable" id="fail2wp-loginip-enable" value="1" ' . ( checked( $this->fail2wp_loginip_enable, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'enable IP address access control for logins', $this->plugin_name ) . '</label> ';
+        echo ' ' . esc_html__( 'enable IP address access control for logins', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_loginip_testmode() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-loginip-testmode">';
         echo '<input type="checkbox" name="fail2wp-loginip-testmode" id="fail2wp-loginip-testmode" value="1" ' . ( checked( $this->fail2wp_loginip_testmode, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'enable test mode. This will log failures to the PHP error log, but not actually block the login', $this->plugin_name ) . '.</label> ';
+        echo ' ' . esc_html__( 'enable test mode. This will log failures to the PHP error log, but not actually block the login', 'fail2wp' ) . '.</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_loginip_inform_fail2ban() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-loginip-inform-fail2ban">';
         echo '<input type="checkbox" name="fail2wp-loginip-inform-fail2ban" id="fail2wp-loginip-inform-fail2ban" value="1" ' . ( checked( $this->fail2wp_loginip_inform_fail2ban, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'notify fail2ban about failed login attempts based on IP login rules, automatically disabled if test mode is enabled', $this->plugin_name ) . '.</label> ';
+        echo ' ' . esc_html__( 'notify fail2ban about failed login attempts based on IP login rules, automatically disabled if test mode is enabled', 'fail2wp' ) . '.</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_loginip_dnscache() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-loginip-dnscache">';
         echo '<input type="number" min="0" max="10080" id="fail2wp-loginip-dnscache" name="fail2wp-loginip-dnscache" size="6" minlength="0" maxlength="5" value="' . esc_attr( (int)$this->fail2wp_loginip_dnscache ) . '" />';
-        echo ' ' . esc_html__( 'minutes (0-10080)', $this->plugin_name ) . '</label> ';
+        echo ' ' . esc_html__( 'minutes (0-10080)', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_settings_loginip_allow() {
@@ -2120,32 +2117,32 @@ class Fail2WP {
         echo implode( "\n", $this->fail2wp_loginip_allow );
         echo '</textarea>';
         echo '<p class="description">' .
-                 '<p>' . esc_html__( 'IPs matching these addresses will be allowed to login', $this->plugin_name ) . '.</p>' .
-                 '<p style="font-weight:bold;">' . esc_html__( 'If this list is used, and the remote IP address does not match an entry here, the login will be denied', $this->plugin_name ) . '!</p>' .
+                 '<p>' . esc_html__( 'IPs matching these addresses will be allowed to login', 'fail2wp' ) . '.</p>' .
+                 '<p style="font-weight:bold;">' . esc_html__( 'If this list is used, and the remote IP address does not match an entry here, the login will be denied', 'fail2wp' ) . '!</p>' .
                  '</p>';
     }
     public function fail2wp_settings_loginip_deny() {
         echo '<textarea rows="8" cols="30" id="fail2wp-loginip-deny" name="fail2wp-loginip-deny" class="large-text code">';
         echo implode( "\n", $this->fail2wp_loginip_deny );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be prevented from logging in', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be prevented from logging in', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_xmlrpc_callback() {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
             return;
         }
         echo '<p>' .
-             esc_html__( 'These settings will disable and/or monitor XMLRPC calls to this site', $this->plugin_name ) . '. ' .
+             esc_html__( 'These settings will disable and/or monitor XMLRPC calls to this site', 'fail2wp' ) . '. ' .
              '</p>';
         echo '<p>' .
-             esc_html__( 'Please make sure you understand how these settings can impact the operation of WordPress and other plugins before making changes to them', $this->plugin_name ) . '.' .
+             esc_html__( 'Please make sure you understand how these settings can impact the operation of WordPress and other plugins before making changes to them', 'fail2wp' ) . '.' .
              '</p>';
         echo '<p>' .
-             esc_html__( 'If an authenticated XMLRPC call fails due to an unknown username or invalid password, it will be handled by Fail2WP as a failed user login attempt', $this->plugin_name ) . '. ' .
-             esc_html__( 'Please see "', $this->plugin_name ) . '<b>' . esc_html__( 'User logging', $this->plugin_name ) . '</b>" ' . esc_html__( 'to configure applicable options', $this->plugin_name ) . '.' .
+             esc_html__( 'If an authenticated XMLRPC call fails due to an unknown username or invalid password, it will be handled by Fail2WP as a failed user login attempt', 'fail2wp' ) . '. ' .
+             esc_html__( 'Please see "', 'fail2wp' ) . '<b>' . esc_html__( 'User logging', 'fail2wp' ) . '</b>" ' . esc_html__( 'to configure applicable options', 'fail2wp' ) . '.' .
              '</p>';
         echo '<p>' .
-             esc_html__( 'If XMLRPC pingbacks are disabled, the following XMLRPC methods are removed', $this->plugin_name ) . ': ' .
+             esc_html__( 'If XMLRPC pingbacks are disabled, the following XMLRPC methods are removed', 'fail2wp' ) . ': ' .
              '<b>' . esc_html  ( 'pingback.ping, pingback.extensions.getPingbacks, demo.sayHello, demo.addTwoNumbers.' ) . '</b>' .
              '</p>';
     }
@@ -2153,30 +2150,30 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-xmlrpc-disable">';
         echo '<input type="checkbox" name="fail2wp-xmlrpc-disable" id="fail2wp-xmlrpc-disable" value="1" ' . ( checked( $this->fail2wp_xmlrpc_disable, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'disable authenticated XMLRPC calls', $this->plugin_name ) . '. ' .
-             esc_html__( 'This will not notify fail2ban', $this->plugin_name ) . '.</label> ';
+        echo ' ' . esc_html__( 'disable authenticated XMLRPC calls', 'fail2wp' ) . '. ' .
+             esc_html__( 'This will not notify fail2ban', 'fail2wp' ) . '.</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_xmlrpc_disable_pingback() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-xmlrpc-disable-pingback">';
         echo '<input type="checkbox" name="fail2wp-xmlrpc-disable-pingback" id="fail2wp-xmlrpc-disable-pingback" value="1" ' . ( checked( $this->fail2wp_xmlrpc_disable_pingback, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'disable XMLRPC pingbacks', $this->plugin_name ) . '. ' .
-             esc_html__( 'This will not notify fail2ban', $this->plugin_name ) . '.</label> ';
+        echo ' ' . esc_html__( 'disable XMLRPC pingbacks', 'fail2wp' ) . '. ' .
+             esc_html__( 'This will not notify fail2ban', 'fail2wp' ) . '.</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_xmlrpc_disable_everything() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-xmlrpc-disable-everything">';
         echo '<input type="checkbox" name="fail2wp-xmlrpc-disable-everything" id="fail2wp-xmlrpc-disable-everything" value="1" ' . ( checked( $this->fail2wp_xmlrpc_disable_everything, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'disable XMLRPC completely', $this->plugin_name ) . '.</label> ';
+        echo ' ' . esc_html__( 'disable XMLRPC completely', 'fail2wp' ) . '.</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_xmlrpc_inform_fail2ban() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-xmlrpc-inform-fail2ban">';
         echo '<input type="checkbox" name="fail2wp-xmlrpc-inform-fail2ban" id="fail2wp-xmlrpc-inform-fail2ban" value="1" ' . ( checked( $this->fail2wp_xmlrpc_inform_fail2ban, 1, false ) ) . '/>';
-        echo ' ' . esc_html__( 'notify fail2ban about failed XMLRPC activity when completely disabled', $this->plugin_name ) . '.</label> ';
+        echo ' ' . esc_html__( 'notify fail2ban about failed XMLRPC activity when completely disabled', 'fail2wp' ) . '.</label> ';
         echo '</div>';
     }
     // @since 1.1.0
@@ -2184,7 +2181,7 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-reguser-warn">';
         echo '<input type="checkbox" name="fail2wp-reguser-warn" id="fail2wp-reguser-warn" value="1" ' . ( checked( $this->fail2wp_reguser_warn, 1, false ) ) . '/>';
-        echo esc_html__( 'Warn about odd membership/registration settings', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Warn about odd membership/registration settings', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_reguser_warn_role() {
@@ -2202,11 +2199,11 @@ class Fail2WP {
             }
             echo '</select>';
             echo '<p class="description">' .
-                 esc_html__( 'Check WordPress setting against the value configured here', $this->plugin_name ) .
+                 esc_html__( 'Check WordPress setting against the value configured here', 'fail2wp' ) .
                  '</p>';
 
         } else {
-            echo esc_html__( 'No available roles (?)', $this->plugin_name );
+            echo esc_html__( 'No available roles (?)', 'fail2wp' );
         }
         echo '</div>';
     }
@@ -2214,7 +2211,7 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-reguser-force">';
         echo '<input type="checkbox" name="fail2wp-reguser-force" id="fail2wp-reguser-force" value="1" ' . ( checked( $this->fail2wp_reguser_force, 1, false ) ) . '/>';
-        echo esc_html__( 'Force new user registration settings to a role', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Force new user registration settings to a role', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_reguser_force_role() {
@@ -2232,41 +2229,41 @@ class Fail2WP {
             }
             echo '</select>';
             echo '<p class="description">' .
-                 esc_html__( 'Force WordPress setting to the value configured here', $this->plugin_name ) .
+                 esc_html__( 'Force WordPress setting to the value configured here', 'fail2wp' ) .
                  '</p>';
         } else {
-            echo esc_html__( 'No available roles (?)', $this->plugin_name );
+            echo esc_html__( 'No available roles (?)', 'fail2wp' );
         }
         echo '</div>';
     }
     public function fail2wp_settings_reguser_username_length() {
         echo '<input id="fail2wp-reguser-username-length" name="fail2wp-reguser-username-length" size="4" maxlength="4" value="' . esc_attr( (int)$this->fail2wp_reguser_username_length ) . '" />';
-        echo '<p class="description">' . esc_html__( 'Minimum length of usernames, 2-200 characters, 0 ignores the setting', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'Minimum length of usernames, 2-200 characters, 0 ignores the setting', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_reguser_username_ban() {
         echo '<textarea rows="10" cols="30" id="fail2wp-reguser-username-ban" name="fail2wp-reguser-username-ban" class="text code">';
         echo implode( "\n", $this->fail2wp_reguser_username_ban );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'These usernames will be blocked for new user registrations', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'These usernames will be blocked for new user registrations', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_reguser_useremail_require() {
         echo '<textarea rows="10" cols="30" id="fail2wp-reguser-useremail-require" name="fail2wp-reguser-useremail-require" class="text code">';
         echo implode( "\n", $this->fail2wp_reguser_useremail_require );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'E-mail address must match at least one of these for new users', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'E-mail address must match at least one of these for new users', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_setting_remove_generator() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-settings-remove-generator">';
         echo '<input type="checkbox" name="fail2wp-settings-remove-generator" id="fail2wp-settings-remove-generator" value="1" ' . ( checked( $this->fail2wp_settings_remove_generator, 1, false ) ) . '/>';
-        echo esc_html__( 'Remove "Generator" output in HTML, RSS, etc.', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Remove "Generator" output in HTML, RSS, etc.', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_remove_feeds() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-settings-remove-feeds">';
         echo '<input type="checkbox" name="fail2wp-settings-remove-feeds" id="fail2wp-settings-remove-feeds" value="1" ' . ( checked( $this->fail2wp_settings_remove_feeds, 1, false ) ) . '/>';
-        echo esc_html__( 'Remove RSS and Atom feeds', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Remove RSS and Atom feeds', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     // @since 1.0.0
@@ -2274,28 +2271,28 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-settings-remove">';
         echo '<input type="checkbox" name="fail2wp-settings-remove" id="fail2wp-settings-remove" value="1" ' . ( checked( $this->fail2wp_settings_remove, 1, false ) ) . '/>';
-        echo esc_html__( 'Remove all plugin settings and data when plugin is uninstalled', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Remove all plugin settings and data when plugin is uninstalled', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_block_enums() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-block-user-enum">';
         echo '<input type="checkbox" name="fail2wp-block-user-enum" id="fail2wp-block-user-enum" value="1" ' . ( checked( $this->fail2wp_block_user_enum, 1, false ) ) . '/>';
-        echo esc_html__( 'Block user enumeration attempts (i.e. your.site/...?author=nnn)', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Block user enumeration attempts (i.e. your.site/...?author=nnn)', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_block_username_login() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-block-username-login">';
         echo '<input type="checkbox" name="fail2wp-block-username-login" id="fail2wp-block-username-login" value="1" ' . ( checked( $this->fail2wp_block_username_login, 1, false ) ) . '/>';
-        echo esc_html__( 'Require users to login with their e-mail address', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Require users to login with their e-mail address', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_secure_login_messages() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-secure-login-message">';
         echo '<input type="checkbox" name="fail2wp-secure-login-message" id="fail2wp-secure-login-message" value="1" ' . ( checked( $this->fail2wp_secure_login_message, 1, false ) ) . '/>';
-        echo esc_html__( 'Change login failure messages to contain less detail', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Change login failure messages to contain less detail', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_settings_restapi_callback() {
@@ -2303,17 +2300,17 @@ class Fail2WP {
             return;
         }
         echo '<p>' .
-             esc_html__( 'Please make sure you understand how these settings can impact the operation of WordPress and other plugins before making changes to them.', $this->plugin_name ) .
+             esc_html__( 'Please make sure you understand how these settings can impact the operation of WordPress and other plugins before making changes to them.', 'fail2wp' ) .
              '</p>';
         $rest_url = get_rest_url();
         echo '<p>' .
-             esc_html__( 'The REST API URL of this site is', $this->plugin_name ) .
+             esc_html__( 'The REST API URL of this site is', 'fail2wp' ) .
              ': <strong>' . esc_html( $rest_url ) . '</strong>' .
              '</p>';
         // Possibly output notice about blocking settings
         if ( $this->fail2wp_rest_filter_require_authenticated ) {
-            echo '<p><strong><span class="dashicons dashicons-warning"></span>&nbsp;' . esc_html__( 'NOTE', $this->plugin_name ) . ':</strong> ' .
-                 esc_html__( 'If "Require authentication" is enabled, no REST API calls will be blocked for logged in users and/or authenticated requests!', $this->plugin_name ) .
+            echo '<p><strong><span class="dashicons dashicons-warning"></span>&nbsp;' . esc_html__( 'NOTE', 'fail2wp' ) . ':</strong> ' .
+                 esc_html__( 'If "Require authentication" is enabled, no REST API calls will be blocked for logged in users and/or authenticated requests!', 'fail2wp' ) .
                  '</p>';
         }
     }
@@ -2322,7 +2319,7 @@ class Fail2WP {
             return;
         }
         echo '<p>' .
-             esc_html__( 'Please make sure you understand how these settings can impact the operation of the plugin before making changes to them.', $this->plugin_name ) .
+             esc_html__( 'Please make sure you understand how these settings can impact the operation of the plugin before making changes to them.', 'fail2wp' ) .
              '</p>';
     }
     public function fail2wp_settings_cloudflare_callback() {
@@ -2330,11 +2327,11 @@ class Fail2WP {
             return;
         }
         echo '<p>'.
-             esc_html__( 'These settings allows the plugin to better interact with Cloudflare.', $this->plugin_name ).
+             esc_html__( 'These settings allows the plugin to better interact with Cloudflare.', 'fail2wp' ).
              ' ' .
-             esc_html__( 'If your site is not published via Cloudflare, you can safely ignore these settings.', $this->plugin_name ).
+             esc_html__( 'If your site is not published via Cloudflare, you can safely ignore these settings.', 'fail2wp' ).
              '<br/><br/>' .
-             esc_html__( 'For an updated list of Cloudflare IPs, please use this link', $this->plugin_name ) .
+             esc_html__( 'For an updated list of Cloudflare IPs, please use this link', 'fail2wp' ) .
              ': '.
              '<a href="https://www.cloudflare.com/ips/" target="_blank">'.
              'www.cloudflare.com/ips' .
@@ -2346,35 +2343,35 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-rest-filter-require-authenticated">';
         echo '<input type="checkbox" name="fail2wp-rest-filter-require-authenticated" id="fail2wp-rest-filter-require-authenticated" value="1" ' . ( checked( $this->fail2wp_rest_filter_require_authenticated, 1, false ) ) . '/>';
-        echo esc_html__( 'Require that users be logged in and/or that all REST API calls are authenticated, this is typically safe to do.', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Require that users be logged in and/or that all REST API calls are authenticated, this is typically safe to do.', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_rest_filter_block_index() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-rest-filter-block-index">';
         echo '<input type="checkbox" name="fail2wp-rest-filter-block-index" id="fail2wp-rest-filter-block-index" value="1" ' . ( checked( $this->fail2wp_rest_filter_block_index, 1, false ) ) . '/>';
-        echo esc_html__( 'Blocks all REST API index calls made to this site, this is typically safe to do.', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Blocks all REST API index calls made to this site, this is typically safe to do.', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_rest_filter_log_blocked() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-rest-filter-log-blocked">';
         echo '<input type="checkbox" name="fail2wp-rest-filter-log-blocked" id="fail2wp-rest-filter-log-blocked" value="1" ' . ( checked( $this->fail2wp_rest_filter_log_blocked, 1, false ) ) . '/>';
-        echo esc_html__( 'Log all blocked REST API calls for Fail2ban processing.', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Log all blocked REST API calls for Fail2ban processing.', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_rest_filter_block_all() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-rest-filter-block-all">';
         echo '<input type="checkbox" name="fail2wp-rest-filter-block-all" id="fail2wp-rest-filter-block-all" value="1" ' . ( checked( $this->fail2wp_rest_filter_block_all, 1, false ) ) . '/>';
-        echo esc_html__( 'Blocks all REST API calls made to this site, this is typically not safe to do.', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Blocks all REST API calls made to this site, this is typically not safe to do.', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_rest_filter_block_ns() {
         $rest_ns = $this->fail2wp_get_rest_ns();
         if ( ! is_array( $rest_ns ) || empty( $rest_ns ) ) {
             echo '<div class="fail2wp-role-option">';
-            echo esc_html__( 'WordPress did not return any available namespaces', $this->plugin_name );
+            echo esc_html__( 'WordPress did not return any available namespaces', 'fail2wp' );
             echo '</div>';
             return;
         }
@@ -2399,23 +2396,23 @@ class Fail2WP {
         echo '<textarea rows="8" cols="30" id="fail2wp-rest-filter-ipv4-bypass" name="fail2wp-rest-filter-ipv4-bypass" class="large-text code">';
         echo implode( "\n", $this->fail2wp_rest_filter_ipv4_bypass );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be allowed to make any REST API call', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be allowed to make any REST API call', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_rest_filter_bypass_ipv6() {
         echo '<textarea rows="8" cols="30" id="fail2wp-rest-filter-ipv6-bypass" name="fail2wp-rest-filter-ipv6-bypass" class="large-text code">';
         echo implode( "\n", $this->fail2wp_rest_filter_ipv6_bypass );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be allowed to make any REST API call', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be allowed to make any REST API call', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_prefix() {
         echo '<input type="text" size="60" maxlength="200" id="fail2wp-prefix" name="fail2wp-prefix" value="' . esc_attr( $this->fail2wp_prefix ). '" />';
-        echo '<p class="description">' . esc_html__( 'The logging prefix, this should normally be left empty', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'The logging prefix, this should normally be left empty', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_setting_also_log_php() {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-also-log-php">';
         echo '<input type="checkbox" name="fail2wp-also-log-php" id="fail2wp-also-log-php" value="1" ' . ( checked( $this->fail2wp_also_log_php, 1, false ) ) . '/>';
-        echo esc_html__( 'Log the same information to PHP log using error_log()', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Log the same information to PHP log using error_log()', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_cloudflare_check() {
@@ -2423,20 +2420,20 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-cloudflare-check">';
         echo '<input type="checkbox" name="fail2wp-cloudflare-check" id="fail2wp-cloudflare-check" value="1" ' . ( checked( $this->fail2wp_cloudflare_check, 1, false ) ) . '/>';
-        echo esc_html__( 'Attempt to unmask real IP when Cloudflare IP is detected', $this->plugin_name ) . '</label> ';
+        echo esc_html__( 'Attempt to unmask real IP when Cloudflare IP is detected', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_settings_cloudflare_ipv4() {
         echo '<textarea rows="10" cols="30" id="fail2wp-cloudflare-ipv4" name="fail2wp-cloudflare-ipv4" class="large-text code">';
         echo implode( "\n", $this->fail2wp_cloudflare_ipv4 );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be considerd to be coming from Cloudflare', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be considerd to be coming from Cloudflare', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_cloudflare_ipv6() {
         echo '<textarea rows="10" cols="30" id="fail2wp-cloudflare-ipv6" name="fail2wp-cloudflare-ipv6" class="large-text code">';
         echo implode( "\n", $this->fail2wp_cloudflare_ipv6 );
         echo '</textarea>';
-        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be considerd to be coming from Cloudflare', $this->plugin_name ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be considerd to be coming from Cloudflare', 'fail2wp' ) . '</p>';
     }
 
 
@@ -2876,11 +2873,11 @@ class Fail2WP {
         $wp_error = $user;
         if ( $this->fail2wp_have_mbstring ) {
             if ( mb_substr_count( $username, '@' ) !== 1 || mb_strpos( $username, '@' ) === 0) {
-                $wp_error = new \WP_Error( 'invalid_username', __('Please specify your e-mail address to login', $this->plugin_name) );
+                $wp_error = new \WP_Error( 'invalid_username', __('Please specify your e-mail address to login', 'fail2wp') );
             }
         } else {
             if ( substr_count( $username, '@' ) !== 1 || strpos( $username, '@' ) === 0) {
-                $wp_error = new \WP_Error( 'invalid_username', __('Please specify your e-mail address to login', $this->plugin_name) );
+                $wp_error = new \WP_Error( 'invalid_username', __('Please specify your e-mail address to login', 'fail2wp') );
             }
         }
         return( $wp_error );
@@ -2898,7 +2895,7 @@ class Fail2WP {
         if ( $domain === 'default' ) {
             switch( $text_in ) {
                 case 'Username or Email Address';
-                    $text_out = __( 'E-mail address', $this->plugin_name );
+                    $text_out = __( 'E-mail address', 'fail2wp' );
                     break;
                 default:
                     $text_out = $xlat_in;
@@ -3264,7 +3261,7 @@ class Fail2WP {
                             if ( $alr['data'] == $remote_real_ip ) {
                                 //Direct match with allow list
                                 if ( $this->fail2wp_loginip_testmode ) {
-                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', $this->plugin_name );
+                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', 'fail2wp' );
                                     error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {allow} Remote address matches allow list, "' . $remote_real_ip . '"' );
                                 }
                                 return( true );
@@ -3275,7 +3272,7 @@ class Fail2WP {
                             if ( $this->fail2wp_cidrm->match( $remote_real_ip, $alr['data'] ) ) {
                                 //Match with CIDR
                                 if ( $this->fail2wp_loginip_testmode ) {
-                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', $this->plugin_name );
+                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', 'fail2wp' );
                                     error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {allow} Remote address matches allow list (CIDR), "' . $remote_real_ip . '"' );
                                 }
                                 return( true );
@@ -3289,7 +3286,7 @@ class Fail2WP {
                                     // IP addresses
                                     if ( $remote_real_ip == $lookup ) {
                                         if ( $this->fail2wp_loginip_testmode ) {
-                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', $this->plugin_name );
+                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', 'fail2wp' );
                                             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {allow} Remote address matches hostname, "' . $alr['data'] . '" ("' . $lookup . '")' );
                                         }
                                         return( true );
@@ -3304,7 +3301,7 @@ class Fail2WP {
                                     // Check remote hostname against wildcard strings
                                     if ( $this->fail2wp_hostname_match_wildcard( $lookup, $alr['data'] ) ) {
                                         if ( $this->fail2wp_loginip_testmode ) {
-                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', $this->plugin_name );
+                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', 'fail2wp' );
                                             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {allow} Remote hostname ("' . $lookup . '") matches string "' . $alr['data'] . '"' );
                                         }
                                         return( true );
@@ -3316,7 +3313,7 @@ class Fail2WP {
                 }// foreach
                 // Allow list is not empty, but no match was made, deny access
                 if ( $this->fail2wp_loginip_testmode ) {
-                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', $this->plugin_name );
+                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', 'fail2wp' );
                     error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {allow} Allow list is not empty, but no matches could be found, login denied' );
                     if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
                         error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit, wpdie}' );
@@ -3333,11 +3330,11 @@ class Fail2WP {
                             $this->fail2wp_alert_send( $alert_message );
                         }
                     }
-                    wp_die( __('Logins are temporarily disabled', $this->plugin_name),
-                            __('Logins are temporarily disabled', $this->plugin_name),
+                    wp_die( __('Logins are temporarily disabled', 'fail2wp'),
+                            __('Logins are temporarily disabled', 'fail2wp'),
                             array( 'response'  => 503,
                                    'link_url'  => get_site_url(),
-                                   'link_text' => __('Go to site', $this->plugin_name) . ' ' . esc_html( get_site_url() ), )
+                                   'link_text' => __('Go to site', 'fail2wp') . ' ' . esc_html( get_site_url() ), )
                             );
                 }
             }
@@ -3360,7 +3357,7 @@ class Fail2WP {
                             if ( $alr['data'] == $remote_real_ip ) {
                                 //Direct match with allow list
                                 if ( $this->fail2wp_loginip_testmode ) {
-                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', $this->plugin_name );
+                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', 'fail2wp' );
                                     error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {deny} Remote address matches deny list, "' . $remote_real_ip . '"' );
                                 }
                                 $block_login = true;
@@ -3372,7 +3369,7 @@ class Fail2WP {
                             if ( $this->fail2wp_cidrm->match( $remote_real_ip, $alr['data'] ) ) {
                                 //Match with CIDR
                                 if ( $this->fail2wp_loginip_testmode ) {
-                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', $this->plugin_name );
+                                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', 'fail2wp' );
                                     error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {deny} Remote address matches deny list (CIDR), "' . $remote_real_ip . '"' );
                                 }
                                 $block_login = true;
@@ -3387,7 +3384,7 @@ class Fail2WP {
                                     // IP addresses
                                     if ( $remote_real_ip == $lookup ) {
                                         if ( $this->fail2wp_loginip_testmode ) {
-                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', $this->plugin_name );
+                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', 'fail2wp' );
                                             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {deny} Remote address matches hostname, "' . $alr['data'] . '" ("' . $lookup . '")' );
                                         }
                                         $block_login = true;
@@ -3403,7 +3400,7 @@ class Fail2WP {
                                     // Check remote hostname against wildcard strings
                                     if ( $this->fail2wp_hostname_match_wildcard( $lookup, $alr['data'] ) ) {
                                         if ( $this->fail2wp_loginip_testmode ) {
-                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', $this->plugin_name );
+                                            $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been denied', 'fail2wp' );
                                             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {deny} Remote hostname ("' . $lookup . '") matches string "' . $alr['data'] . '"' );
                                         }
                                         $block_login = true;
@@ -3424,21 +3421,21 @@ class Fail2WP {
                             $this->fail2wp_alert_send( $alert_message );
                         }
                     }
-                    wp_die( __('Logins are temporarily disabled', $this->plugin_name),
-                            __('Logins are temporarily disabled', $this->plugin_name),
+                    wp_die( __('Logins are temporarily disabled', 'fail2wp'),
+                            __('Logins are temporarily disabled', 'fail2wp'),
                             array( 'response'  => 503,
                                    'link_url'  => get_site_url(),
-                                   'link_text' => __('Go to site', $this->plugin_name) . ' ' . esc_html( get_site_url() ), )
+                                   'link_text' => __('Go to site', 'fail2wp') . ' ' . esc_html( get_site_url() ), )
                             );
                 }
             } else {
                 if ( $this->fail2wp_loginip_testmode ) {
-                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', $this->plugin_name );
+                    $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', 'fail2wp' );
                 }
             }
         } else {
             if ( $this->fail2wp_loginip_testmode && empty( $error ) ) {
-                $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', $this->plugin_name );
+                $error = esc_html( '{fail2wp}' ) . ' ' . esc_html__( 'Login attempt would have been allowed', 'fail2wp' );
             }
         }
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
@@ -3596,7 +3593,7 @@ class Fail2WP {
                     case 'invalidcombo':
                     case 'empty_username':
                         if ( $this->fail2wp_secure_login_message ) {
-                            $error = esc_html__( 'Invalid login credentials, please try again.', $this->plugin_name );
+                            $error = esc_html__( 'Invalid login credentials, please try again.', 'fail2wp' );
                         }
                         $wp_error = new \WP_Error( $e_c[0], $error );
                         if ( ! empty( $this->fail2wp_unknown_warn ) ) {
@@ -3629,11 +3626,11 @@ class Fail2WP {
                 case 'empty_username':
                 case 'invalidcombo':
                     if ( $this->fail2wp_secure_login_message ) {
-                        $error = esc_html__( 'Invalid login credentials, please try again.', $this->plugin_name );
+                        $error = esc_html__( 'Invalid login credentials, please try again.', 'fail2wp' );
                         // Possibly include link to password recovery if we're not already there
                         $lost_password_url = wp_lostpassword_url();
                         if ( ! empty( $lost_password_url ) ) {
-                            $error .= '<br/><a href=" ' . esc_url( $lost_password_url ) . '">' . esc_html__( 'Lost password', $this->plugin_name ) . '</a>';
+                            $error .= '<br/><a href=" ' . esc_url( $lost_password_url ) . '">' . esc_html__( 'Lost password', 'fail2wp' ) . '</a>';
                         }
                     }
                     break;
@@ -3685,7 +3682,7 @@ class Fail2WP {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
         }
-        if ( ! load_plugin_textdomain( $this->plugin_name,
+        if ( ! load_plugin_textdomain( 'fail2wp',
                                        false,
                                        dirname( plugin_basename( __FILE__ ) ) . '/languages' ) ) {
             /**
@@ -3709,7 +3706,7 @@ class Fail2WP {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
         }
 
-        wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/fail2wp.css', array(), $this->resource_mtime( dirname(__FILE__).'/css/fail2wp.css' ), 'all' );
+        wp_enqueue_style( 'fail2wp', plugin_dir_url( __FILE__ ) . 'css/fail2wp.css', array(), $this->resource_mtime( dirname(__FILE__).'/css/fail2wp.css' ), 'all' );
 
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );
@@ -3769,7 +3766,7 @@ function run_fail2wp() {
     if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
         error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
     }
-    $plugin = Fail2WP::getInstance( FAIL2WP_VERSION, FAIL2WP_PLUGINNAME_SLUG );
+    $plugin = Fail2WP::getInstance();
     $plugin->run();
     if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
         error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );

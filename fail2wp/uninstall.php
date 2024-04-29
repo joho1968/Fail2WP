@@ -8,7 +8,7 @@
  * @author            Joaquim Homrighausen <joho@webbplatsen.se>
  *
  * uninstall.php
- * Copyright (C) 2021, 2022, 2023 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -38,28 +38,28 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: init' );
     }
-	exit;
+    exit;
 }
 // If action is not to uninstall, then exit
 if ( empty( $_REQUEST['action'] ) || $_REQUEST['action'] !== 'delete-plugin' ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: REQUEST["action"] is not delete-plugin' );
     }
-	exit;
+    exit;
 }
 // If it's not us, then exit
 if ( empty( $_REQUEST['slug'] ) || $_REQUEST['slug'] !== 'fail2wp' ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: REQUEST["slug"] is not fail2wp' );
     }
-	exit;
+    exit;
 }
 // If we shouldn't do this, then exit
 if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'delete_plugins' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: User is not allowed to manage/uninstall plugins' );
     }
-	exit;
+    exit;
 }
 
 // Figure out if an uninstall should remove plugin settings

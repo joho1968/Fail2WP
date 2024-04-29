@@ -33,7 +33,7 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 ### Other notes
 
 * This plugin `may` work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5+ and 6.2.x` at the time of this writing
+* This plugin has been tested with `WordPress 5.5+ and 6.5.x` at the time of this writing
 * This plugin has been tested with `PHP 7.2, 7.4, and 8.1.20` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
@@ -69,6 +69,10 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Changelog
 
+### 1.2.1
+* Verified with WordPress 6.5.2
+* Updated "About" information
+
 ### 1.2.0
 * Verified with WordPress 6.2.2 and PHP 8.1.20
 * Added support for allow/deny list for login (IP address, hostname with wildcard support)
@@ -96,6 +100,9 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Upgrade Notice
 
+### 1.2.1
+* Install the new version, no changes have been made to settings.
+
 ### 1.2.0
 * Install the new version and walk through the settings.
 * Check your fail2ban configuration against the supplied sample `fail2wp.conf`!
@@ -113,7 +120,7 @@ This is a hard question to answer. There are no known incompatibilities.
 
 Please see [LICENSE](LICENSE) for a full copy of GPLv2
 
-Copyright (C) 2020, 2021, 2022, 2023 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
+Copyright (C) 2020, 2021, 2022, 2023, 2024 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
 
 This file is part of Fail2WP. Fail2WP is free software.
 

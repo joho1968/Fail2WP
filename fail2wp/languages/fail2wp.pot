@@ -1,15 +1,15 @@
 # Fail2WP WordPress plugin <LANGUAGE> translation
-# Copyright (C) 2021, 2022, 2023 Joaquim Homrighausen
+# Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen
 # This file is distributed under the same license as the Fail2WP package.
 # Joaquim Homrighausen <joho@webbplatsen.se>, 2023.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fail2wp 1.2.0\n"
+"Project-Id-Version: fail2wp 1.2.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-03-08 15:51+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2024-04-29 11:45+0100\n"
 "Last-Translator: Joaquim Homrighausen <joho@webbplatsen.se>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -246,6 +246,20 @@ msgstr ""
 
 #: fail2wp.php:1357 fail2wp.php:1680
 msgid "There is more documentation available at"
+msgstr ""
+
+#: fail2wp.php:1669
+msgid "Other plugins"
+msgstr ""
+
+#: fail2wp.php:1673
+msgid ""
+"Plugin that provides integration with Mattermost, including notifications "
+"and OAuth2 authentication"
+msgstr ""
+
+#: fail2wp.php:1678
+msgid "Plugin that provides uncomplicated map functionality"
 msgstr ""
 
 #: fail2wp.php:1374 fail2wp.php:1699
