@@ -2689,7 +2689,7 @@ class Fail2WP {
         // too, but we're likely to have less configured roles/caps than what
         // is available. So maybe this will save an iteration or two :-)
         foreach( $notify_roles as $role ) {
-            if ( in_array( $role, $roles ) && $roles[$role] ) {
+            if ( in_array( $role, $roles, true ) && array_key_exists( $role, $roles ) ) {
                 return( true );
             }
         }
