@@ -1036,7 +1036,7 @@ class Fail2WP {
                 $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid username, please try again.', 'fail2wp' ) );
             }
         }
-        if ( ! $have_error ) {
+        if ( ! $have_error && ! empty( $this->fail2wp_reguser_useremail_require ) ) {
             $invalid_email = true;
             if ( ! empty ( $user_email ) ) {
                 $invalid_email = true;
