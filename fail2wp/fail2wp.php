@@ -11,7 +11,7 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.2.1
+ * Version:           1.2.2
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -20,7 +20,7 @@
  * Domain Path:       /languages
  *
  * fail2wp.php
- * Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2020-2024 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -51,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.2.1'                 );
+define( 'FAIL2WP_VERSION',                 '1.2.2'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -77,15 +77,15 @@ define( 'VALIDATE_IPHOSTCIDR_IPV6_CIDR',   3 );
 define( 'VALIDATE_IPHOSTCIDR_HOSTNAME',    4 );
 define( 'VALIDATE_IPHOSTCIDR_HOSTNAME_WC', 5 );
 
-define( 'FAIL2WP_DEBUG',                false                      );
+define( 'FAIL2WP_DEBUG',                   false                   );
 if ( defined( 'FAIL2WP_DEBUG' ) && FAIL2WP_DEBUG ) {
-    define( 'FAIL2WP_REST_DEBUG',          true                    );
+    define( 'FAIL2WP_REST_DEBUG',          false                   );
     define( 'FAIL2WP_GENERAL_DEBUG',       true                    );
     define( 'FAIL2WP_FLOW_DEBUG',          true                    );
-    define( 'FAIL2WP_CACHE_DEBUG',         true                    );
+    define( 'FAIL2WP_CACHE_DEBUG',         false                   );
     define( 'FAIL2WP_SETTINGS_DEBUG',      true                    );
     define( 'FAIL2WP_DUMP_SETTINGS',       true                    );
-    define( 'FAIL2WP_XMLRPC_DEBUG',        true                    );
+    define( 'FAIL2WP_XMLRPC_DEBUG',        false                   );
 }
 
 
@@ -324,13 +324,18 @@ class Fail2WP {
             'types',
             'users',
         );
-
         // Dump all of our settings, for development
         if ( defined( 'FAIL2WP_DUMP_SETTINGS' ) && FAIL2WP_DUMP_SETTINGS ) {
             global $wpdb;
-            $settings = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->options} WHERE option_name LIKE 'fail2wp%'" ), ARRAY_A );
+            /*
+            $settings = $wpdb->get_results(
+                $wpdb->prepare( "SELECT * FROM {$wpdb->options} WHERE option_name LIKE 'fail2wp%'" ),
+                ARRAY_A
+            );
+            */
+            $settings = $wpdb->get_results( "SELECT * FROM {$wpdb->options} WHERE option_name LIKE 'fail2wp%'", ARRAY_A );
             if ( is_array( $settings ) ) {
-                error_log( var_export( $settings, true ) );
+                error_log( print_r( $settings, true ) );
             } else {
                 error_log ( basename( __FILE__ ) . ': Unable to fetch settings' );
             }
@@ -459,12 +464,12 @@ class Fail2WP {
             $this->fail2wp_rest_filter_block_routes = array();
             update_option( 'fail2wp-rest-filter-block-routes', json_encode( $this->fail2wp_rest_filter_block_routes ) );
         }
-        $this->fail2wp_rest_filter_ipv4_bypass = @ json_decode( get_option ( 'fail2wp-rest-filter-ipv4-bypass', null ), true, 2 );
+        $this->fail2wp_rest_filter_ipv4_bypass = @ json_decode( get_option( 'fail2wp-rest-filter-ipv4-bypass', null ), true, 2 );
         if ( ! is_array( $this->fail2wp_rest_filter_ipv4_bypass ) ) {
             $this->fail2wp_rest_filter_ipv4_bypass = array();
             update_option( 'fail2wp-rest-filter-ipv4-bypass', json_encode( $this->fail2wp_rest_filter_ipv4_bypass ) );
         }
-        $this->fail2wp_rest_filter_ipv6_bypass = @ json_decode( get_option ( 'fail2wp-rest-filter-ipv6-bypass', null ), true, 2 );
+        $this->fail2wp_rest_filter_ipv6_bypass = @ json_decode( get_option( 'fail2wp-rest-filter-ipv6-bypass', null ), true, 2 );
         if ( ! is_array( $this->fail2wp_rest_filter_ipv6_bypass ) ) {
             $this->fail2wp_rest_filter_ipv6_bypass = array();
             update_option( 'fail2wp-rest-filter-ipv6-bypass', json_encode( $this->fail2wp_rest_filter_ipv6_bypass ) );
@@ -508,21 +513,21 @@ class Fail2WP {
         } else {
             $this->fail2wp_cloudflare_check = true;
         }
-        $this->fail2wp_cloudflare_ipv4 = @ json_decode( get_option ( 'fail2wp-cloudflare-ipv4', null ), true, 2 );
+        $this->fail2wp_cloudflare_ipv4 = @ json_decode( get_option( 'fail2wp-cloudflare-ipv4', null ), true, 2 );
         if ( ! is_array( $this->fail2wp_cloudflare_ipv4 ) ) {
             $this->fail2wp_cloudflare_ipv4 = array();
             update_option( 'fail2wp-cloudflare-ipv4', json_encode( $this->fail2wp_cloudflare_ipv4 ) );
         }
-        $this->fail2wp_cloudflare_ipv6 = @ json_decode( get_option ( 'fail2wp-cloudflare-ipv6', null ), true, 2 );
+        $this->fail2wp_cloudflare_ipv6 = @ json_decode( get_option( 'fail2wp-cloudflare-ipv6', null ), true, 2 );
         if ( ! is_array( $this->fail2wp_cloudflare_ipv6 ) ) {
             $this->fail2wp_cloudflare_ipv6 = array();
             update_option( 'fail2wp-cloudflare-ipv6', json_encode( $this->fail2wp_cloudflare_ipv6 ) );
         }
         // ..Login IP checking @since 1.2.0
-        $this->fail2wp_loginip_enable = get_option ( 'fail2wp-loginip-enable', false );
-        $this->fail2wp_loginip_testmode = get_option ( 'fail2wp-loginip-testmode', true );
+        $this->fail2wp_loginip_enable = get_option( 'fail2wp-loginip-enable', false );
+        $this->fail2wp_loginip_testmode = get_option( 'fail2wp-loginip-testmode', true );
         $this->fail2wp_loginip_inform_fail2ban = get_option( 'fail2wp-loginip-inform-fail2ban', false );
-        $this->fail2wp_loginip_dnscache = get_option ( 'fail2wp-loginip-dnscache', -1 );
+        $this->fail2wp_loginip_dnscache = get_option( 'fail2wp-loginip-dnscache', -1 );
         if ( $this->fail2wp_loginip_dnscache < 0 ) {
             $this->fail2wp_loginip_dnscache = 60;
         } elseif ( $this->fail2wp_loginip_dnscache > 10080 ) {
@@ -1036,7 +1041,8 @@ class Fail2WP {
                 $errors->add( 'fail2wp_username_ban', esc_html__( 'Invalid username, please try again.', 'fail2wp' ) );
             }
         }
-        if ( ! $have_error ) {
+        // Check e-mail
+        if ( ! $have_error && ! empty( $this->fail2wp_reguser_useremail_require ) ) {
             $invalid_email = true;
             if ( ! empty ( $user_email ) ) {
                 $invalid_email = true;
@@ -1667,12 +1673,17 @@ class Fail2WP {
              '</p>' .
              '<p style="margin-top:20px;">' .
                  '<h3>' . esc_html__( 'Other plugins', 'fail2wp' ) . '</h3>' .
-                 '<p class="cb2fa-row">' .
+                 '<p class="fail2wp-row">' .
                      '<a href="https://wordpress.org/plugins/cloudbridge-mattermost" target="_blank" class="fail2wp-ext-link">Cloudbridge Mattermost</a>' .
                      '<br/>' .
                      esc_html__( 'Plugin that provides integration with Mattermost, including notifications and OAuth2 authentication', 'fail2wp' ) . '.' .
                  '</p>' .
-                 '<p class="cb2fa-row">' .
+                 '<p class="fail2wp-row">' .
+                     '<a href="https://wordpress.org/plugins/cloudbridge-2fa" target="_blank" class="fail2wp-ext-link">Cloudbridge Mattermost</a>' .
+                     '<br/>' .
+                     esc_html__( 'Plugin that provides uncomplicated 2FA protection', 'fail2wp' ) . '.' .
+                 '</p>' .
+                 '<p class="fail2wp-row">' .
                      '<a href="https://wordpress.org/plugins/easymap" target="_blank" class="fail2wp-ext-link">EasyMap</a>' .
                      '<br/>' .
                      esc_html__( 'Plugin that provides uncomplicated map functionality', 'fail2wp' ) . '.' .
@@ -2689,7 +2700,7 @@ class Fail2WP {
         // too, but we're likely to have less configured roles/caps than what
         // is available. So maybe this will save an iteration or two :-)
         foreach( $notify_roles as $role ) {
-            if ( in_array( $role, $roles ) && $roles[$role] ) {
+            if ( array_key_exists( $role, $roles ) && $roles[$role] ) {
                 return( true );
             }
         }
@@ -2718,7 +2729,7 @@ class Fail2WP {
         // too, but we're likely to have less configured roles/caps than what
         // is available. So maybe this will save an iteration or two :-)
         foreach( $notify_array as $role ) {
-            if ( in_array( $role, $roles ) && $roles[$role] ) {
+            if ( array_key_exists( $role, $roles ) && $roles[$role] ) {
                 $new_roles[] = $role;
             }
         }

@@ -8,19 +8,22 @@
     padding-right: 5px;
 }
 .fail2wp-config-header {
-	padding: 20px 10px;
-	border-top: 5px solid #35537a;
-	background: #fff;
+    padding: 20px 10px;
+    border-top: 5px solid #35537a;
+    background: #fff;
 }
 .fail2wp-config-section {
-	margin-top: 15px;
-	padding: 25px 10px;
-	color: #000;
-	background: #fff;
+    margin-top: 15px;
+    padding: 25px 10px;
+    color: #000;
+    background: #fff;
 }
 .fail2wp-ext-link {
   color: #007bff;
   text-decoration: none;
+}
+.fail2wp-row {
+    margin-top: 5px;
 }
 img.fail2wp-wps-logo {
     display: inline;

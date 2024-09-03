@@ -1,4 +1,4 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.1-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.6-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
@@ -33,8 +33,8 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 ### Other notes
 
 * This plugin `may` work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5+ and 6.5.x` at the time of this writing
-* This plugin has been tested with `PHP 7.2, 7.4, and 8.1.20` at the time of this writing
+* This plugin has been tested with `WordPress 5.5.x and 6.x` at the time of this writing
+* This plugin has been tested with `PHP 7.2, 7.4, and 8.1.x` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -68,6 +68,12 @@ This is a hard question to answer. There are no known incompatibilities.
 4. Re-start Fail2ban
 
 ## Changelog
+
+### 1.2.2
+* Verified with WordPress 6.6
+* Improved code for role notification settings, [PR#2](https://github.com/joho1968/Fail2WP/pull/2)
+* Improved code for e-mail checking for new user registrations [PR#1](https://github.com/joho1968/Fail2WP/pull/1)
+* Thanks to [philscott-rg](https://github.com/philscott-rg) and [Edward Casbon ](https://github.com/edwardcasbon)
 
 ### 1.2.1
 * Verified with WordPress 6.5.2
@@ -120,7 +126,7 @@ This is a hard question to answer. There are no known incompatibilities.
 
 Please see [LICENSE](LICENSE) for a full copy of GPLv2
 
-Copyright (C) 2020, 2021, 2022, 2023, 2024 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
+Copyright (C) 2020-2024 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
 
 This file is part of Fail2WP. Fail2WP is free software.
 
@@ -140,9 +146,9 @@ Boston, MA  02110-1301, USA.
 
 The Fail2WP WordPress Plugin was written by Joaquim Homrighausen while converting :coffee: into code.
 
-Fail2WP is sponsored by [WebbPlatsen i Sverige AB](https://webbplatsen.se), Stockholm, :sweden:
+Fail2WP is sponsored by [WebbPlatsen i Sverige AB](https://webbplatsen.se) :sweden:
 
-Commercial support and customizations for this plugin is available from WebbPlatsen i Sverige AB in Stockholm, :sweden:
+Commercial support and customizations for this plugin is available from WebbPlatsen i Sverige AB in :sweden:
 
 If you find this plugin useful, the author is happy to receive a donation, good review, or just a kind word.
 
