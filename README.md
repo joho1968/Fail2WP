@@ -1,4 +1,4 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.6-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.7-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
@@ -68,6 +68,15 @@ This is a hard question to answer. There are no known incompatibilities.
 4. Re-start Fail2ban
 
 ## Changelog
+
+### 1.2.3
+* Verified with WordPress 6.7
+* Verified with Plugin Check (PCP)
+* Fixed issue when requiring REST API authentication and IPv4/IPv6 bypass was configured
+* Fixed issue with uninitialized variable in XML-RPC handling
+* Fixed PHP warning for json_decode() call, this did not impact functionality
+* Corrected some Swedish translations
+* Corrected some checks for `uninstall.php` and made it more WP-CLI compatible
 
 ### 1.2.2
 * Verified with WordPress 6.6

@@ -36,10 +36,17 @@ defined( 'ABSPATH' ) || die( '-1' );
 // If uninstall not called from WordPress, then exit
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
-        error_log( 'fail2wp-uninstall: init' );
+        error_log( 'fail2wp-uninstall: init, WP_UNINSTALL_PLUGIN not defined' );
     }
-    exit;
+    die();
 }
+
+/**
+ * We don't check these anymore.
+ * https://developer.wordpress.org/plugins/plugin-basics/uninstall-methods/
+ */
+
+/*
 // If action is not to uninstall, then exit
 if ( empty( $_REQUEST['action'] ) || $_REQUEST['action'] !== 'delete-plugin' ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
@@ -61,6 +68,7 @@ if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'delete_plugi
     }
     exit;
 }
+*/
 
 // Figure out if an uninstall should remove plugin settings
 $remove_settings = get_option( 'fail2wp-settings-remove', '0' );
