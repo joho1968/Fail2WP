@@ -1,4 +1,4 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.2\+](https://img.shields.io/badge/PHP-7.2-blue?style=flat-square)](https://php.net) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.7-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.8-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
@@ -34,7 +34,7 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 
 * This plugin `may` work with earlier versions of WordPress
 * This plugin has been tested with `WordPress 5.5.x and 6.x` at the time of this writing
-* This plugin has been tested with `PHP 7.2, 7.4, and 8.1.x` at the time of this writing
+* This plugin has been tested with `PHP 7.4, and 8.1.x` at the time of this writing
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -68,6 +68,10 @@ This is a hard question to answer. There are no known incompatibilities.
 4. Re-start Fail2ban
 
 ## Changelog
+
+### 1.2.4
+* Verified with WordPress 6.8
+* Removed PHP 7.2 compatibility (PHP 7.4 or above is now required)
 
 ### 1.2.3
 * Verified with WordPress 6.7
@@ -135,7 +139,7 @@ This is a hard question to answer. There are no known incompatibilities.
 
 Please see [LICENSE](LICENSE) for a full copy of GPLv2
 
-Copyright (C) 2020-2024 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
+Copyright (C) 2020-2025 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
 
 This file is part of Fail2WP. Fail2WP is free software.
 

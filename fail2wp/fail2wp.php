@@ -11,7 +11,7 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.2.3
+ * Version:           1.2.4
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -20,7 +20,7 @@
  * Domain Path:       /languages
  *
  * fail2wp.php
- * Copyright (C) 2020-2024 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2020-2025 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -1042,10 +1042,10 @@ class Fail2WP {
      * according to our settings.
      *
      * @since 1.1.0
-     * @param WP_Error $errors.
+     * @param \WP_Error $errors.
      * @param string $sanitized_user_login.
      * @param string $user_email.
-     * @return WP_Error With or without errors
+     * @return \WP_Error With or without errors
      */
     public function fail2wp_admin_check_new_user( \WP_Error $errors, string $user_login, string $user_email ) {
         // apply_filters( 'registration_errors', $errors, $sanitized_user_login, $user_email );
@@ -1249,6 +1249,8 @@ class Fail2WP {
      * @since 1.1.0
      */
     public function fail2wp_admin_alert_new_users_null() {
+        global $wp;
+
         echo '<div class="notice notice-error"><br/>'.
              '<span class="dashicons dashicons-shield" style="font-size:24x;"></span>&nbsp;' .
              esc_html__( 'User registration is enabled, but no role has been configured', 'fail2wp' ) .
@@ -1940,18 +1942,18 @@ class Fail2WP {
      *
      * @since  1.0.0
      */
-    public function fail2wp_setting_sanitize_site_label( $input ) {
+    public function fail2wp_setting_sanitize_site_label( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         if ( $this->fail2wp_have_mbstring ) {
             return( mb_substr( sanitize_text_field( $input ), 0, 200 ) );
         }
         return( substr( sanitize_text_field( $input ), 0, 200 ) );
     }
-    public function fail2wp_setting_sanitize_roles( $input ) {
+    public function fail2wp_setting_sanitize_roles( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         $available_roles = $this->fail2wp_get_wp_roles();
         $return_val = array();
@@ -1966,9 +1968,9 @@ class Fail2WP {
         }
         return( wp_json_encode( $return_val ) );
     }
-    public function fail2wp_setting_sanitize_block_ns( $input ) {
+    public function fail2wp_setting_sanitize_block_ns( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         $namespaces = $this->fail2wp_get_rest_ns();
         $return_val = array();
@@ -1982,9 +1984,9 @@ class Fail2WP {
         }
         return( wp_json_encode( $return_val ) );
     }
-    public function fail2wp_setting_sanitize_block_routes( $input ) {
+    public function fail2wp_setting_sanitize_block_routes( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         $return_val = array();
         if ( is_array( $input ) ) {
@@ -1997,18 +1999,18 @@ class Fail2WP {
         }
         return( wp_json_encode( $return_val ) );
     }
-    public function fail2wp_setting_sanitize_advanced( $input ) {
+    public function fail2wp_setting_sanitize_advanced( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         if ( $this->fail2wp_have_mbstring ) {
             return( mb_substr( sanitize_text_field( $input ), 0, 200 ) );
         }
         return( substr( sanitize_text_field( $input ), 0, 200 ) );
     }
-    public function fail2wp_setting_sanitize_textarea_setting( $input ) {
+    public function fail2wp_setting_sanitize_textarea_setting( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         $output = array();
         $original_input = sanitize_textarea_field( $input );
@@ -2048,9 +2050,9 @@ class Fail2WP {
         $input = @ wp_json_encode( $output );
         return( $input );
     }
-    public function fail2wp_setting_sanitize_username_length( $input ) {
+    public function fail2wp_setting_sanitize_username_length( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( '' );
         }
         // We really should strip everything but numbers here, but ...
         $input = (int) sanitize_text_field( $input );
@@ -2061,9 +2063,9 @@ class Fail2WP {
         }
         return( $input );
     }
-    public function fail2wp_setting_sanitize_dnscache( $input ) {
+    public function fail2wp_setting_sanitize_dnscache( $input ) : int {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
+            return( 10080 );
         }
         // We really should strip everything but numbers here, but ...
         $input = (int) sanitize_text_field( $input );
@@ -2500,7 +2502,6 @@ class Fail2WP {
         echo '</div>';
     }
     public function fail2wp_setting_cloudflare_check() {
-        $option_val = $this->fail2wp_cloudflare_check;
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-cloudflare-check">';
         echo '<input type="checkbox" name="fail2wp-cloudflare-check" id="fail2wp-cloudflare-check" value="1" ' . ( checked( $this->fail2wp_cloudflare_check, 1, false ) ) . '/>';

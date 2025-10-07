@@ -8,7 +8,7 @@
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
  * fail2wp_misc.inc.php
- * Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2021-2025 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.

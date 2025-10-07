@@ -451,7 +451,9 @@ msgstr ""
 "Ett tillägg som integrerar WordPress med Mattermost, inklusive aviseringar "
 "och OAuth2-autentisering"
 
+msgid ""
 "Plugin that provides uncomplicated 2FA protection"
+msgstr ""
 "Ett tillägg som tillhandahåller okomplicerat 2FA-skydd"
 
 #: fail2wp.php:1678
