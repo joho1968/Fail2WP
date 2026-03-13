@@ -1,15 +1,15 @@
 # Fail2WP WordPress plugin <sv_SE> translation
-# Copyright (C) 2021,2022,2023,2024 Joaquim Homrighausen
+# Copyright (C) 2020-2026 Joaquim Homrighausen
 # This file is distributed under the same license as the Fail2WP package.
 # Joaquim Homrighausen <joho@webbplatsen.se>, 2023.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fail2wp 1.2.2\n"
+"Project-Id-Version: fail2wp 1.2.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-03-08 15:51+0100\n"
-"PO-Revision-Date: 2024-09-03 11:45+0100\n"
+"PO-Revision-Date: 2026-03-12 10:30+0100\n"
 "Last-Translator: Joaquim Homrighausen <joho@webbplatsen.se>\n"
 "Language-Team: SWEDISH <joho@webbplatsen.se>\n"
 "Language: sv_SE\n"
@@ -171,16 +171,16 @@ msgid "Unknown users"
 msgstr "Okända användare"
 
 #: fail2wp.php:537 fail2wp.php:1607 fail2wp.php:2054
-msgid "User enumeration attempts (i.e. your.site/...?author=nnn)"
-msgstr "Försök att hämta användarnamn (t ex din.sajt.../?author=nnn)"
+msgid "User enumeration attempts (i.e. your.site/...?author=nnn or /wp-json/wp/v2/users)"
+msgstr "Försök att hämta användarnamn (t ex din.sajt.../?author=nnn eller /wp-json/wp/v2/users)"
 
 #: fail2wp.php:545 fail2wp.php:1705 fail2wp.php:2277
 msgid "Remove all plugin settings and data when plugin is uninstalled"
 msgstr "Ta bort alla inställningar när tillägget avinstalleras"
 
 #: fail2wp.php:553 fail2wp.php:1712 fail2wp.php:2284
-msgid "Block user enumeration attempts (i.e. your.site/...?author=nnn)"
-msgstr "Blockera försök att hämta användarnamn (t ex din.sajt.../?author=nnn)"
+msgid "Block user enumeration attempts (i.e. your.site/...?author=nnn or /wp-json/wp/v2/users)"
+msgstr "Blockera försök att hämta användarnamn (t ex din.sajt.../?author=nnn eller /wp-json/wp/v2/users)"
 
 #: fail2wp.php:561 fail2wp.php:1719 fail2wp.php:2291
 msgid "Require users to login with their e-mail address"
@@ -216,6 +216,12 @@ msgstr ""
 "För en uppdaterad lista med Cloudflares IP-adresser, vänligen använd denna "
 "länk"
 
+#: fail2wp.php:2456
+msgid "You can fetch the current Cloudflare IPv4 and IPv6 lists into the fields below before saving."
+msgstr ""
+"Du kan hämta de aktuella Cloudflare-listorna för IPv4 och IPv6 till fälten "
+"nedan innan du sparar."
+
 #: fail2wp.php:599 fail2wp.php:1840 fail2wp.php:2412
 msgid "The logging prefix, this should normally be left empty"
 msgstr "Loggningsprefix, detta skall i normala fall vara tomt"
@@ -228,12 +234,90 @@ msgstr "Logga samma information till PHP:s logg via error_log()"
 msgid "Attempt to unmask real IP when Cloudflare IP is detected"
 msgstr "Försök att avkoda den verkliga IP-adressen när Cloudflare upptäcks"
 
+#: fail2wp.php:2591
+msgid "The IPv4, IPv6, and refresh controls below are only used when this setting is enabled."
+msgstr "IPv4-, IPv6- och uppdateringskontrollerna nedan används bara när denna inställning är aktiverad."
+
 #: fail2wp.php:626 fail2wp.php:637 fail2wp.php:1861 fail2wp.php:1867
 #: fail2wp.php:2433 fail2wp.php:2439
 msgid ""
 "IPs matching these addresses will be considerd to be coming from Cloudflare"
 msgstr ""
 "IP-adresser som matchar dessa kommer att hanteras som Cloudflare-adresser"
+
+#: fail2wp.php:2601 fail2wp.php:2611
+msgid "You can edit this list even when Cloudflare support is disabled."
+msgstr "Du kan redigera denna lista även när Cloudflare-stödet är inaktiverat."
+
+#: fail2wp.php:1903 fail2wp.php:2561
+msgid "Refresh Cloudflare IPs"
+msgstr "Uppdatera Cloudflare-IP-adresser"
+
+#: fail2wp.php:2565
+msgid "Fetch current Cloudflare IPs"
+msgstr "Hämta aktuella Cloudflare-IP-adresser"
+
+#: fail2wp.php:2577
+msgid "Fetches the current Cloudflare IPv4 and IPv6 lists into the fields above. Use Save Changes to store any updates."
+msgstr ""
+"Hämtar de aktuella Cloudflare-listorna för IPv4 och IPv6 till fälten ovan. "
+"Använd Spara ändringar för att spara eventuella uppdateringar."
+
+#: fail2wp.php:2634
+msgid "This button stays available so you can refresh the ranges before enabling Cloudflare support."
+msgstr "Denna knapp är fortsatt tillgänglig så att du kan uppdatera intervallen innan du aktiverar Cloudflare-stödet."
+
+#: fail2wp.php:2614
+msgid "Unexpected response from Cloudflare IP list endpoint."
+msgstr "Oväntat svar från Cloudflares IP-listtjänst."
+
+#: fail2wp.php:2618 fail2wp.php:2636
+msgid "Cloudflare IP list endpoint returned an empty response."
+msgstr "Cloudflares IP-listtjänst returnerade ett tomt svar."
+
+#: fail2wp.php:2622
+msgid "Unable to parse Cloudflare IP list response."
+msgstr "Kunde inte tolka svaret från Cloudflares IP-listtjänst."
+
+#: fail2wp.php:2631
+msgid "Cloudflare IP list response contained an invalid entry."
+msgstr "Svaret från Cloudflares IP-listtjänst innehöll en ogiltig post."
+
+#: fail2wp.php:2661
+msgid "Unable to verify the Cloudflare refresh request."
+msgstr "Kunde inte verifiera begäran om att uppdatera Cloudflare-IP-adresser."
+
+#: fail2wp.php:2685
+msgid "Cloudflare IPv4 and IPv6 ranges have been updated in the form. Use Save Changes to store the update."
+msgstr ""
+"Cloudflares IPv4- och IPv6-intervall har uppdaterats i formuläret. Använd "
+"Spara ändringar för att spara uppdateringen."
+
+#: fail2wp.php:2687
+msgid "Cloudflare IPv4 ranges have been updated in the form. Use Save Changes to store the update."
+msgstr ""
+"Cloudflares IPv4-intervall har uppdaterats i formuläret. Använd Spara "
+"ändringar för att spara uppdateringen."
+
+#: fail2wp.php:2689
+msgid "Cloudflare IPv6 ranges have been updated in the form. Use Save Changes to store the update."
+msgstr ""
+"Cloudflares IPv6-intervall har uppdaterats i formuläret. Använd Spara "
+"ändringar för att spara uppdateringen."
+
+#: fail2wp.php:2691
+msgid "No changes detected in Cloudflare IP ranges."
+msgstr "Inga ändringar upptäcktes i Cloudflares IP-intervall."
+
+#: fail2wp.php:2694
+msgid "An error occurred while fetching Cloudflare IP ranges. No changes were made for the affected field."
+msgstr ""
+"Ett fel uppstod när Cloudflares IP-intervall hämtades. Inga ändringar "
+"gjordes för det berörda fältet."
+
+#: fail2wp.php:2505
+msgid "Cloudflare support is currently disabled. The ranges and refresh tool below remain available so you can prepare changes before enabling it."
+msgstr "Cloudflare-stödet är för närvarande inaktiverat. Intervallen och uppdateringsverktyget nedan är fortfarande tillgängliga så att du kan förbereda ändringar innan du aktiverar funktionen."
 
 #: fail2wp.php:962 fail2wp.php:966 fail2wp.php:2239 fail2wp.php:2243
 #: fail2wp.php:2879 fail2wp.php:2883
@@ -573,6 +657,14 @@ msgstr "Ta bort \"Generator\"-info från HTML, RSS, etc."
 msgid "Remove RSS and Atom feeds"
 msgstr "Inaktiverar RSS- och Atom-flöden"
 
+#: fail2wp.php:771
+msgid "This feed has been disabled, please visit"
+msgstr "Detta flöde har inaktiverats, vänligen besök"
+
+#: fail2wp.php:775
+msgid "Feed disabled"
+msgstr "Flöde inaktiverat"
+
 #: fail2wp.php:1734 fail2wp.php:2306
 msgid ""
 "Please make sure you understand how these settings can impact the operation "
@@ -589,13 +681,23 @@ msgstr "Webbplatsens REST API URL är"
 msgid "NOTE"
 msgstr "OBS!"
 
-#: fail2wp.php:1744 fail2wp.php:2316
+#: fail2wp.php:2403
 msgid ""
-"If \"Require authentication\" is enabled, no REST API calls will be blocked "
-"for logged in users and/or authenticated requests!"
+"If \"Require authentication\" is enabled, unauthenticated REST API calls "
+"will be blocked while logged in and authenticated requests are allowed."
 msgstr ""
-"Om \"Kräv autentisering\" är aktiverat så blockeras inga REST API-anrop för "
-"inloggade och/eller autentiserade användare!"
+"Om \"Kräv autentisering\" är aktiverat blockeras oautentiserade REST API-"
+"anrop medan inloggade och autentiserade anrop tillåts."
+
+#: fail2wp.php:2407
+msgid ""
+"REST block settings only affect unauthenticated requests. Logged in and "
+"authenticated requests are allowed so that WordPress and plugins can "
+"continue to use the REST API."
+msgstr ""
+"Inställningarna för REST-blockering påverkar endast oautentiserade anrop. "
+"Inloggade och autentiserade anrop tillåts så att WordPress och tillägg kan "
+"fortsätta använda REST API."
 
 #: fail2wp.php:1777 fail2wp.php:2349
 msgid ""
@@ -663,7 +765,7 @@ msgstr "Informera fail2ban"
 
 #: fail2wp.php:1731
 msgid "Cache DNS lookups"
-msgstr ""
+msgstr "Mellanlagra DNS-uppslag"
 
 #: fail2wp.php:1737
 msgid "Allow list"

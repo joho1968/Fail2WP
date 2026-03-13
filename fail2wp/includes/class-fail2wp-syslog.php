@@ -88,7 +88,7 @@ class SysLog {
         }
     }
 
-    public function log_message( string $message, int $severity, string $prefix = '', int $facility = null ) {
+    public function log_message( string $message, int $severity, string $prefix = '', ?int $facility = null ) {
         if ( empty( $prefix ) ) {
             $prefix = $this->x_default_prefix;
         }

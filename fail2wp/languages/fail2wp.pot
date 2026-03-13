@@ -6,10 +6,10 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fail2wp 1.2.2\n"
+"Project-Id-Version: fail2wp 1.2.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-08 15:51+0100\n"
-"PO-Revision-Date: 2024-09-03 11:45+0100\n"
+"POT-Creation-Date: 2026-03-12 10:30+0100\n"
+"PO-Revision-Date: 2026-03-12 10:30+0100\n"
 "Last-Translator: Joaquim Homrighausen <joho@webbplatsen.se>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -399,7 +399,7 @@ msgid "Unknown users"
 msgstr ""
 
 #: fail2wp.php:1612 fail2wp.php:2054
-msgid "User enumeration attempts (i.e. your.site/...?author=nnn)"
+msgid "User enumeration attempts (i.e. your.site/...?author=nnn or /wp-json/wp/v2/users)"
 msgstr ""
 
 #: fail2wp.php:1620 fail2wp.php:2187
@@ -442,12 +442,20 @@ msgstr ""
 msgid "Remove RSS and Atom feeds"
 msgstr ""
 
+#: fail2wp.php:771
+msgid "This feed has been disabled, please visit"
+msgstr ""
+
+#: fail2wp.php:775
+msgid "Feed disabled"
+msgstr ""
+
 #: fail2wp.php:1710 fail2wp.php:2277
 msgid "Remove all plugin settings and data when plugin is uninstalled"
 msgstr ""
 
 #: fail2wp.php:1717 fail2wp.php:2284
-msgid "Block user enumeration attempts (i.e. your.site/...?author=nnn)"
+msgid "Block user enumeration attempts (i.e. your.site/...?author=nnn or /wp-json/wp/v2/users)"
 msgstr ""
 
 #: fail2wp.php:1724 fail2wp.php:2291
@@ -472,10 +480,17 @@ msgstr ""
 msgid "NOTE"
 msgstr ""
 
-#: fail2wp.php:1749 fail2wp.php:2316
+#: fail2wp.php:2403
 msgid ""
-"If \"Require authentication\" is enabled, no REST API calls will be blocked "
-"for logged in users and/or authenticated requests!"
+"If \"Require authentication\" is enabled, unauthenticated REST API calls "
+"will be blocked while logged in and authenticated requests are allowed."
+msgstr ""
+
+#: fail2wp.php:2407
+msgid ""
+"REST block settings only affect unauthenticated requests. Logged in and "
+"authenticated requests are allowed so that WordPress and plugins can "
+"continue to use the REST API."
 msgstr ""
 
 #: fail2wp.php:1758 fail2wp.php:2325
@@ -496,6 +511,10 @@ msgstr ""
 
 #: fail2wp.php:1770 fail2wp.php:2337
 msgid "For an updated list of Cloudflare IPs, please use this link"
+msgstr ""
+
+#: fail2wp.php:2456
+msgid "You can fetch the current Cloudflare IPv4 and IPv6 lists into the fields below before saving."
 msgstr ""
 
 #: fail2wp.php:1782 fail2wp.php:2349
@@ -543,6 +562,70 @@ msgstr ""
 #: fail2wp.php:1866 fail2wp.php:1872 fail2wp.php:2433 fail2wp.php:2439
 msgid ""
 "IPs matching these addresses will be considerd to be coming from Cloudflare"
+msgstr ""
+
+#: fail2wp.php:1903 fail2wp.php:2561
+msgid "Refresh Cloudflare IPs"
+msgstr ""
+
+#: fail2wp.php:2565
+msgid "Fetch current Cloudflare IPs"
+msgstr ""
+
+#: fail2wp.php:2577
+msgid "Fetches the current Cloudflare IPv4 and IPv6 lists into the fields above. Use Save Changes to store any updates."
+msgstr ""
+
+#: fail2wp.php:2614
+msgid "Unexpected response from Cloudflare IP list endpoint."
+msgstr ""
+
+#: fail2wp.php:2618 fail2wp.php:2636
+msgid "Cloudflare IP list endpoint returned an empty response."
+msgstr ""
+
+#: fail2wp.php:2622
+msgid "Unable to parse Cloudflare IP list response."
+msgstr ""
+
+#: fail2wp.php:2631
+msgid "Cloudflare IP list response contained an invalid entry."
+msgstr ""
+
+#: fail2wp.php:2661
+msgid "Unable to verify the Cloudflare refresh request."
+msgstr ""
+
+#: fail2wp.php:2685
+msgid "Cloudflare IPv4 and IPv6 ranges have been updated in the form. Use Save Changes to store the update."
+msgstr ""
+
+#: fail2wp.php:2687
+msgid "Cloudflare IPv4 ranges have been updated in the form. Use Save Changes to store the update."
+msgstr ""
+
+#: fail2wp.php:2689
+msgid "Cloudflare IPv6 ranges have been updated in the form. Use Save Changes to store the update."
+msgstr ""
+
+#: fail2wp.php:2691
+msgid "No changes detected in Cloudflare IP ranges."
+msgstr ""
+
+#: fail2wp.php:2694
+msgid "An error occurred while fetching Cloudflare IP ranges. No changes were made for the affected field."
+msgstr ""
+
+msgid "Cloudflare support is currently disabled. The ranges and refresh tool below remain available so you can prepare changes before enabling it."
+msgstr ""
+
+msgid "The IPv4, IPv6, and refresh controls below are only used when this setting is enabled."
+msgstr ""
+
+msgid "You can edit this list even when Cloudflare support is disabled."
+msgstr ""
+
+msgid "This button stays available so you can refresh the ranges before enabling Cloudflare support."
 msgstr ""
 
 #: fail2wp.php:2244 fail2wp.php:2248 fail2wp.php:2879 fail2wp.php:2883

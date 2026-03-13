@@ -11,7 +11,7 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.2.4
+ * Version:           1.2.5
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -20,7 +20,7 @@
  * Domain Path:       /languages
  *
  * fail2wp.php
- * Copyright (C) 2020-2025 Joaquim Homrighausen; all rights reserved.
+ * Copyright (C) 2020-2026 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
  * This file is part of Fail2WP. Fail2WP is free software.
@@ -51,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.2.3'                 );
+define( 'FAIL2WP_VERSION',                 '1.2.5'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -68,6 +68,8 @@ define( 'FAIL2WP_DEFAULT_HTTPS_PORT',      443                     );
 define( 'FAIL2WP_DB_VERSION',              2                       );
 define( 'FAIL2WP_EXPORT_HEADER',           'fail2wp_export.begin.' );
 define( 'FAIL2WP_EXPORT_FOOTER',           '.fail2wp_export.end'   );
+define( 'FAIL2WP_CLOUDFLARE_IPS_V4_URL',   'https://www.cloudflare.com/ips-v4/' );
+define( 'FAIL2WP_CLOUDFLARE_IPS_V6_URL',   'https://www.cloudflare.com/ips-v6/' );
 
 define( 'VALIDATE_IPHOSTCIDR_INVALID',     -1 );
 define( 'VALIDATE_IPHOSTCIDR_IPV4',        0 );
@@ -241,6 +243,8 @@ class Fail2WP {
     protected $fail2wp_log_user_enum;
     protected $fail2wp_default_http_port;
     protected $fail2wp_default_https_port;
+    protected $fail2wp_site_label;
+    protected $fail2wp_cloudflare_check;
     protected $fail2wp_cloudflare_ipv4;
     protected $fail2wp_cloudflare_ipv6;
 
@@ -276,6 +280,10 @@ class Fail2WP {
     protected $fail2wp_xmlrpc_inform_fail2ban;                  // @since 1.2.0
 
     protected $fail2wp_cidrm;                                   // @since 1.2.0
+    protected $fail2wp_login_url_modify;
+    protected $fail2wp_login_url;
+    protected $fail2wp_login_admin_url_modify;
+    protected $fail2wp_login_admin_url;
 
     protected $fail2wp_hostname_cache;                          // @since 1.2.0
     protected $fail2wp_hostname_cache_updated;                  // @since 1.2.0
@@ -587,7 +595,9 @@ class Fail2WP {
             if ( $this->fail2wp_rest_filter_block_all
                     || ! empty( $this->fail2wp_rest_filter_block_index )
                         || ! empty( $this->fail2wp_rest_filter_block_ns )
-                            || ! empty( $this->fail2wp_rest_filer_block_routes ) ) {
+                            || ! empty( $this->fail2wp_rest_filter_block_routes )
+                                || $this->fail2wp_block_user_enum
+                                    || $this->fail2wp_log_user_enum ) {
                 add_action( 'rest_api_init', [$this, 'fail2wp_rest_init'] );
             }
         }
@@ -611,13 +621,13 @@ class Fail2WP {
             remove_action( 'wp_head', 'wp_shortlink_wp_head',            10, 0 );
             remove_action( 'wp_head', 'adjacent_posts_rel_link_wp_head', 10, 0 );
             remove_action( 'wp_head', 'wp_oembed_add_discovery_links'          );
-            add_action( 'do_feed',               [$this, 'fail2wp_remove_feeds'] );
-            add_action( 'do_feed_rdf',           [$this, 'fail2wp_remove_feeds'] );
-            add_action( 'do_feed_rss',           [$this, 'fail2wp_remove_feeds'] );
-            add_action( 'do_feed_rss2',          [$this, 'fail2wp_remove_feeds'] );
-            add_action( 'do_feed_atom',          [$this, 'fail2wp_remove_feeds'] );
-            add_action( 'do_feed_rss2_comments', [$this, 'fail2wp_remove_feeds'] );
-            add_action( 'do_feed_atom_comments', [$this, 'fail2wp_remove_feeds'] );
+            add_action( 'do_feed',               [$this, 'fail2wp_remove_feeds'], 1 );
+            add_action( 'do_feed_rdf',           [$this, 'fail2wp_remove_feeds'], 1 );
+            add_action( 'do_feed_rss',           [$this, 'fail2wp_remove_feeds'], 1 );
+            add_action( 'do_feed_rss2',          [$this, 'fail2wp_remove_feeds'], 1 );
+            add_action( 'do_feed_atom',          [$this, 'fail2wp_remove_feeds'], 1 );
+            add_action( 'do_feed_rss2_comments', [$this, 'fail2wp_remove_feeds'], 1 );
+            add_action( 'do_feed_atom_comments', [$this, 'fail2wp_remove_feeds'], 1 );
         }
         // ..Various settings
         $this->fail2wp_default_http_port = FAIL2WP_DEFAULT_HTTP_PORT;
@@ -749,28 +759,27 @@ class Fail2WP {
     /**
      * Remove feeds.
      *
-     * Instead of a 404, we issue a WordPress redirect to the main page.
+     * Return a 404 response when feeds are disabled.
      *
      * @since 1.1.0
      */
+    protected function fail2wp_die_feed_disabled() {
+        wp_die(
+            __( 'This feed has been disabled, please visit', 'fail2wp' ) .
+            ' <a href="' . esc_url( home_url() ) . '">' .
+            esc_html( home_url() ) .
+            '</a>',
+            __( 'Feed disabled', 'fail2wp' ),
+            array(
+                'link_url'  => home_url(),
+                'link_text' => home_url(),
+                'code'      => 'feed_disabled',
+                'response'  => 404,
+            )
+        );
+    }
     public function fail2wp_remove_feeds( $feed ) {
-        wp_redirect( home_url(), 302 );
-        exit();
-        // One could have something like this too of course, but WordPress
-        // doesn't seem to like this for some reason and will still display
-        // the feed content.
-        /*
-        wp_die( __( 'This feed has been disabled, please visit', 'fail2wp' ) .
-                ' <a href="' . home_url() . '">' .
-                home_url() .
-                '</a>',
-                __( 'Feed disabled', 'fail2wp' ),
-                array( 'link_url' => home_url(),
-                       'link_text' => home_url(),
-                       'code' => 'feed_disabled',
-                       'response' => 404 ) );
-        */
-
+        $this->fail2wp_die_feed_disabled();
     }
     public function fail2wp_noshow_feeds( $noshow ) {
         return( false );
@@ -801,7 +810,10 @@ class Fail2WP {
                 // Block REST API index calls
                 add_filter( 'rest_index', [$this, 'fail2wp_rest_index'] );
                 $add_pre_dispatch_filter = true;
-            } elseif ( ! empty( $this->fail2wp_rest_filter_block_ns ) ) {
+            } elseif ( ! empty( $this->fail2wp_rest_filter_block_ns )
+                       || ! empty( $this->fail2wp_rest_filter_block_routes )
+                       || $this->fail2wp_block_user_enum
+                       || $this->fail2wp_log_user_enum ) {
                 // Check namespaces on requests
                 $add_pre_dispatch_filter = true;
             }
@@ -913,11 +925,32 @@ class Fail2WP {
         return( $allowed_to_bypass );
     }
     /**
+     * Check if route is part of the REST user endpoints.
+     *
+     * Covers both the collection route and individual user item routes.
+     *
+     * @since 1.2.5
+     */
+    protected function fail2wp_rest_is_users_route( string $wp_route ) : bool {
+        if ( $wp_route === 'users' ) {
+            return( true );
+        }
+        if ( $this->fail2wp_have_mbstring ) {
+            return( mb_stripos( $wp_route, 'users/' ) === 0 );
+        }
+        return( stripos( $wp_route, 'users/' ) === 0 );
+    }
+    /**
      * Handle majority of REST API filtering.
      *
      * @since 1.1.0
      */
     public function fail2wp_rest_pre_dispatch( $result, \WP_REST_Server $rest_server, \WP_REST_Request $request ) {
+        // Authenticated users should be able to use wp-admin, the editor, and
+        // plugin workflows without being caught by broad REST blocking rules.
+        if ( is_user_logged_in() ) {
+            return( $result );
+        }
         // Figure out who we're talking to
         if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
             $remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
@@ -973,6 +1006,21 @@ class Fail2WP {
                 }
             }
         }
+        if ( $is_wp_route && $this->fail2wp_rest_is_users_route( $wp_route ) ) {
+            if ( $this->fail2wp_log_user_enum ) {
+                $alert_message = $this->fail2wp_make_alert_message( $remote_ip_cf, null, FAIL2WP_ALERT_USER_ENUM, true );
+                if ( ! empty( $alert_message ) ) {
+                    $this->fail2wp_alert_send( $alert_message );
+                }
+            }
+            if ( $this->fail2wp_block_user_enum ) {
+                return new \WP_Error(
+                    'rest_no_route',
+                    __( 'No route was found matching the URL and request method.', 'default' ),
+                    array( 'status' => '404' )
+                );
+            }
+        }
         // Figure out if we're blocking index requests and if this is one
         if ( in_array( $route, $namespaces ) ) {
             if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
@@ -1013,7 +1061,11 @@ class Fail2WP {
         // Figure out if we're blocking this WP REST API route. Request will be
         // /... Routes to block are stored without the leading slash.
         if ( $is_wp_route && ! empty( $this->fail2wp_rest_filter_block_routes ) ) {
-            if ( in_array( $wp_route, $this->fail2wp_rest_filter_block_routes ) ) {
+            $route_block_match = in_array( $wp_route, $this->fail2wp_rest_filter_block_routes );
+            if ( ! $route_block_match && in_array( 'users', $this->fail2wp_rest_filter_block_routes ) ) {
+                $route_block_match = $this->fail2wp_rest_is_users_route( $wp_route );
+            }
+            if ( $route_block_match ) {
                 if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                     error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for route "' . $route . '"' );
                 }
@@ -1402,6 +1454,10 @@ class Fail2WP {
         }
         // Get ourselves a proper URL
         $action = admin_url( 'admin.php' ) . '?page=' . FAIL2WP_PLUGINNAME_SLUG;
+        $tab_notice = '';
+        if ( $this->fail2wp_settings_tab == 'cloudflare' ) {
+            $tab_notice = $this->fail2wp_handle_cloudflare_refresh();
+        }
         //
         $html = '';
         $tab_header ='<div class="wrap">';
@@ -1444,6 +1500,7 @@ class Fail2WP {
                            esc_html__( 'One or more of openlog(), closelog(), and/or syslog() seem to be missing on this system', 'fail2wp' ).
                            '</strong></p></div>';
         }
+        $tab_header .= $tab_notice;
         ob_start();
         if ( $this->fail2wp_settings_tab == 'about' ) {
             $this->fail2wp_about_page();
@@ -1882,10 +1939,10 @@ class Fail2WP {
           add_settings_field( 'fail2wp-cloudflare-check', esc_html__( 'Check for Cloudflare IP', 'fail2wp' ), [$this, 'fail2wp_setting_cloudflare_check'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-check'] );
           add_settings_field( 'fail2wp-cloudflare-ipv4', esc_html__( 'Cloudflare IPv4', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_ipv4'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv4'] );
           add_settings_field( 'fail2wp-cloudflare-ipv6', esc_html__( 'Cloudflare IPv6', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_ipv6'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv6'] );
+          add_settings_field( 'fail2wp-cloudflare-refresh', esc_html__( 'Refresh Cloudflare IPs', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_refresh'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-refresh'] );
 
         register_setting( 'fail2wp-settings', 'fail2wp-site-label', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_site_label']] );
         register_setting( 'fail2wp-settings', 'fail2wp-block-user-enum' );
-        register_setting( 'fail2wp-settings', 'fail2wp-block-username-login' );
         register_setting( 'fail2wp-settings', 'fail2wp-block-username-login' );
         register_setting( 'fail2wp-settings', 'fail2wp-secure-login-message' );
         register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-generator' );
@@ -2050,6 +2107,20 @@ class Fail2WP {
         $input = @ wp_json_encode( $output );
         return( $input );
     }
+    protected function fail2wp_sanitize_textarea_setting_to_array( string $input ) : array {
+        $sanitized = $this->fail2wp_setting_sanitize_textarea_setting( $input );
+        $decoded = @ json_decode( $sanitized, true, 2 );
+        if ( ! is_array( $decoded ) ) {
+            return( array() );
+        }
+        $output = array();
+        foreach( $decoded as $entry ) {
+            if ( ! empty( $entry ) ) {
+                $output[] = $entry;
+            }
+        }
+        return( $output );
+    }
     public function fail2wp_setting_sanitize_username_length( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
             return( '' );
@@ -2129,7 +2200,7 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-log-user-enum">';
         echo '<input type="checkbox" name="fail2wp-log-user-enum" id="fail2wp-log-user-enum" value="1" ' . ( checked( $this->fail2wp_log_user_enum, 1, false ) ) . '/>';
-        echo esc_html__( 'User enumeration attempts (i.e. your.site/...?author=nnn)', 'fail2wp' ) . '</label> ';
+        echo esc_html__( 'User enumeration attempts (i.e. your.site/...?author=nnn or /wp-json/wp/v2/users)', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     // @since 1.2.0
@@ -2364,7 +2435,7 @@ class Fail2WP {
         echo '<div class="fail2wp-role-option">';
         echo '<label for="fail2wp-block-user-enum">';
         echo '<input type="checkbox" name="fail2wp-block-user-enum" id="fail2wp-block-user-enum" value="1" ' . ( checked( $this->fail2wp_block_user_enum, 1, false ) ) . '/>';
-        echo esc_html__( 'Block user enumeration attempts (i.e. your.site/...?author=nnn)', 'fail2wp' ) . '</label> ';
+        echo esc_html__( 'Block user enumeration attempts (i.e. your.site/...?author=nnn or /wp-json/wp/v2/users)', 'fail2wp' ) . '</label> ';
         echo '</div>';
     }
     public function fail2wp_setting_block_username_login() {
@@ -2396,7 +2467,11 @@ class Fail2WP {
         // Possibly output notice about blocking settings
         if ( $this->fail2wp_rest_filter_require_authenticated ) {
             echo '<p><strong><span class="dashicons dashicons-warning"></span>&nbsp;' . esc_html__( 'NOTE', 'fail2wp' ) . ':</strong> ' .
-                 esc_html__( 'If "Require authentication" is enabled, no REST API calls will be blocked for logged in users and/or authenticated requests!', 'fail2wp' ) .
+                 esc_html__( 'If "Require authentication" is enabled, unauthenticated REST API calls will be blocked while logged in and authenticated requests are allowed.', 'fail2wp' ) .
+                 '</p>';
+        } elseif ( $this->fail2wp_rest_filter_block_all || $this->fail2wp_rest_filter_block_index || ! empty( $this->fail2wp_rest_filter_block_ns ) || ! empty( $this->fail2wp_rest_filter_block_routes ) ) {
+            echo '<p><strong><span class="dashicons dashicons-warning"></span>&nbsp;' . esc_html__( 'NOTE', 'fail2wp' ) . ':</strong> ' .
+                 esc_html__( 'REST block settings only affect unauthenticated requests. Logged in and authenticated requests are allowed so that WordPress and plugins can continue to use the REST API.', 'fail2wp' ) .
                  '</p>';
         }
     }
@@ -2417,12 +2492,19 @@ class Fail2WP {
              ' ' .
              esc_html__( 'If your site is not published via Cloudflare, you can safely ignore these settings.', 'fail2wp' ).
              '<br/><br/>' .
+             esc_html__( 'You can fetch the current Cloudflare IPv4 and IPv6 lists into the fields below before saving.', 'fail2wp' ) .
+             '<br/>' .
              esc_html__( 'For an updated list of Cloudflare IPs, please use this link', 'fail2wp' ) .
              ': '.
              '<a href="https://www.cloudflare.com/ips/" target="_blank">'.
              'www.cloudflare.com/ips' .
              '</a>'.
              '</p>';
+        if ( ! $this->fail2wp_cloudflare_check ) {
+            echo '<p><strong><span class="dashicons dashicons-warning"></span>&nbsp;' . esc_html__( 'NOTE', 'fail2wp' ) . ':</strong> ' .
+                 esc_html__( 'Cloudflare support is currently disabled. The ranges and refresh tool below remain available so you can prepare changes before enabling it.', 'fail2wp' ) .
+                 '</p>';
+        }
     }
     // @since 1.1.0
     public function fail2wp_setting_rest_filter_require_authenticated() {
@@ -2506,19 +2588,169 @@ class Fail2WP {
         echo '<label for="fail2wp-cloudflare-check">';
         echo '<input type="checkbox" name="fail2wp-cloudflare-check" id="fail2wp-cloudflare-check" value="1" ' . ( checked( $this->fail2wp_cloudflare_check, 1, false ) ) . '/>';
         echo esc_html__( 'Attempt to unmask real IP when Cloudflare IP is detected', 'fail2wp' ) . '</label> ';
+        echo '<p class="description">' . esc_html__( 'The IPv4, IPv6, and refresh controls below are only used when this setting is enabled.', 'fail2wp' ) . '</p>';
         echo '</div>';
     }
     public function fail2wp_settings_cloudflare_ipv4() {
+        $cloudflare_ranges_class = 'fail2wp-cloudflare-field' . ( $this->fail2wp_cloudflare_check ? '' : ' fail2wp-soft-disabled' );
+        echo '<div class="' . esc_attr( $cloudflare_ranges_class ) . '">';
         echo '<textarea rows="10" cols="30" id="fail2wp-cloudflare-ipv4" name="fail2wp-cloudflare-ipv4" class="large-text code">';
         echo esc_html( implode( "\n", $this->fail2wp_cloudflare_ipv4 ) );
         echo '</textarea>';
         echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be considerd to be coming from Cloudflare', 'fail2wp' ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'You can edit this list even when Cloudflare support is disabled.', 'fail2wp' ) . '</p>';
+        echo '</div>';
     }
     public function fail2wp_settings_cloudflare_ipv6() {
+        $cloudflare_ranges_class = 'fail2wp-cloudflare-field' . ( $this->fail2wp_cloudflare_check ? '' : ' fail2wp-soft-disabled' );
+        echo '<div class="' . esc_attr( $cloudflare_ranges_class ) . '">';
         echo '<textarea rows="10" cols="30" id="fail2wp-cloudflare-ipv6" name="fail2wp-cloudflare-ipv6" class="large-text code">';
         echo esc_html( implode( "\n", $this->fail2wp_cloudflare_ipv6 ) );
         echo '</textarea>';
         echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be considerd to be coming from Cloudflare', 'fail2wp' ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'You can edit this list even when Cloudflare support is disabled.', 'fail2wp' ) . '</p>';
+        echo '</div>';
+    }
+    public function fail2wp_settings_cloudflare_refresh() {
+        $action = admin_url( 'admin.php?page=' . FAIL2WP_PLUGINNAME_SLUG . '&tab=cloudflare' );
+        $cloudflare_refresh_class = 'fail2wp-cloudflare-field' . ( $this->fail2wp_cloudflare_check ? '' : ' fail2wp-soft-disabled' );
+        echo '<div class="' . esc_attr( $cloudflare_refresh_class ) . '">';
+        echo wp_nonce_field( 'fail2wp_cloudflare_refresh', 'fail2wp_cloudflare_refresh_nonce', true, false );
+        submit_button(
+            esc_html__( 'Fetch current Cloudflare IPs', 'fail2wp' ),
+            'secondary',
+            'fail2wp-cloudflare-refresh',
+            false,
+            [
+                'id'             => 'fail2wp-cloudflare-refresh',
+                'formaction'     => esc_url( $action ),
+                'formmethod'     => 'post',
+                'formnovalidate' => 'formnovalidate',
+            ]
+        );
+        echo '<p class="description">' .
+             esc_html__( 'Fetches the current Cloudflare IPv4 and IPv6 lists into the fields above. Use Save Changes to store any updates.', 'fail2wp' ) .
+             '</p>';
+        echo '<p class="description">' . esc_html__( 'This button stays available so you can refresh the ranges before enabling Cloudflare support.', 'fail2wp' ) . '</p>';
+        echo '</div>';
+    }
+    protected function fail2wp_validate_cloudflare_cidr( string $cidr, bool $is_ipv6 ) : bool {
+        $split = explode( '/', trim( $cidr ) );
+        if ( ! is_array( $split ) || count( $split ) !== 2 ) {
+            return( false );
+        }
+        if ( $is_ipv6 ) {
+            if ( ! filter_var( $split[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+                return( false );
+            }
+            if ( ! preg_match( '/^\d{1,3}$/', $split[1] ) ) {
+                return( false );
+            }
+            return( (int)$split[1] <= 128 );
+        }
+        if ( ! filter_var( $split[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+            return( false );
+        }
+        if ( ! preg_match( '/^\d{1,2}$/', $split[1] ) ) {
+            return( false );
+        }
+        return( (int)$split[1] <= 32 );
+    }
+    protected function fail2wp_fetch_cloudflare_ranges( string $url, bool $is_ipv6 ) {
+        $response = wp_safe_remote_get(
+            $url,
+            [
+                'timeout'     => 10,
+                'redirection' => 3,
+            ]
+        );
+        if ( is_wp_error( $response ) ) {
+            return( $response );
+        }
+        if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            return( new \WP_Error( 'fail2wp_cloudflare_fetch_status', __( 'Unexpected response from Cloudflare IP list endpoint.', 'fail2wp' ) ) );
+        }
+        $body = trim( wp_remote_retrieve_body( $response ) );
+        if ( empty( $body ) ) {
+            return( new \WP_Error( 'fail2wp_cloudflare_fetch_empty', __( 'Cloudflare IP list endpoint returned an empty response.', 'fail2wp' ) ) );
+        }
+        $ranges = preg_split( '/\r\n|\r|\n/', strtolower( $body ) );
+        if ( ! is_array( $ranges ) ) {
+            return( new \WP_Error( 'fail2wp_cloudflare_fetch_parse', __( 'Unable to parse Cloudflare IP list response.', 'fail2wp' ) ) );
+        }
+        $output = array();
+        foreach( $ranges as $range ) {
+            $range = trim( $range );
+            if ( empty( $range ) ) {
+                continue;
+            }
+            if ( ! $this->fail2wp_validate_cloudflare_cidr( $range, $is_ipv6 ) ) {
+                return( new \WP_Error( 'fail2wp_cloudflare_fetch_invalid', __( 'Cloudflare IP list response contained an invalid entry.', 'fail2wp' ) ) );
+            }
+            $output[] = $range;
+        }
+        if ( empty( $output ) ) {
+            return( new \WP_Error( 'fail2wp_cloudflare_fetch_empty', __( 'Cloudflare IP list endpoint returned an empty response.', 'fail2wp' ) ) );
+        }
+        return( $output );
+    }
+    protected function fail2wp_admin_notice( string $message, string $type = 'info' ) : string {
+        return(
+            '<div class="notice notice-' . esc_attr( $type ) . ' is-dismissible"><p><strong>' .
+            esc_html( $message ) .
+            '</strong></p></div>'
+        );
+    }
+    protected function fail2wp_apply_cloudflare_form_state_from_post() {
+        $this->fail2wp_cloudflare_check = isset( $_POST['fail2wp-cloudflare-check'] );
+        if ( isset( $_POST['fail2wp-cloudflare-ipv4'] ) ) {
+            $this->fail2wp_cloudflare_ipv4 = $this->fail2wp_sanitize_textarea_setting_to_array( wp_unslash( $_POST['fail2wp-cloudflare-ipv4'] ) );
+        }
+        if ( isset( $_POST['fail2wp-cloudflare-ipv6'] ) ) {
+            $this->fail2wp_cloudflare_ipv6 = $this->fail2wp_sanitize_textarea_setting_to_array( wp_unslash( $_POST['fail2wp-cloudflare-ipv6'] ) );
+        }
+    }
+    protected function fail2wp_handle_cloudflare_refresh() : string {
+        if ( ! isset( $_POST['fail2wp-cloudflare-refresh'] ) ) {
+            return( '' );
+        }
+        if ( ! isset( $_POST['fail2wp_cloudflare_refresh_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fail2wp_cloudflare_refresh_nonce'] ) ), 'fail2wp_cloudflare_refresh' ) ) {
+            return( $this->fail2wp_admin_notice( __( 'Unable to verify the Cloudflare refresh request.', 'fail2wp' ), 'error' ) );
+        }
+        $this->fail2wp_apply_cloudflare_form_state_from_post();
+        $current_ipv4 = $this->fail2wp_cloudflare_ipv4;
+        $current_ipv6 = $this->fail2wp_cloudflare_ipv6;
+        $fetched_ipv4 = $this->fail2wp_fetch_cloudflare_ranges( FAIL2WP_CLOUDFLARE_IPS_V4_URL, false );
+        $fetched_ipv6 = $this->fail2wp_fetch_cloudflare_ranges( FAIL2WP_CLOUDFLARE_IPS_V6_URL, true );
+        $have_error = false;
+        $notices = '';
+        $updated_ipv4 = false;
+        $updated_ipv6 = false;
+        if ( is_wp_error( $fetched_ipv4 ) ) {
+            $have_error = true;
+        } elseif ( $fetched_ipv4 !== $current_ipv4 ) {
+            $this->fail2wp_cloudflare_ipv4 = $fetched_ipv4;
+            $updated_ipv4 = true;
+        }
+        if ( is_wp_error( $fetched_ipv6 ) ) {
+            $have_error = true;
+        } elseif ( $fetched_ipv6 !== $current_ipv6 ) {
+            $this->fail2wp_cloudflare_ipv6 = $fetched_ipv6;
+            $updated_ipv6 = true;
+        }
+        if ( $updated_ipv4 && $updated_ipv6 ) {
+            $notices .= $this->fail2wp_admin_notice( __( 'Cloudflare IPv4 and IPv6 ranges have been updated in the form. Use Save Changes to store the update.', 'fail2wp' ), 'success' );
+        } elseif ( $updated_ipv4 ) {
+            $notices .= $this->fail2wp_admin_notice( __( 'Cloudflare IPv4 ranges have been updated in the form. Use Save Changes to store the update.', 'fail2wp' ), 'success' );
+        } elseif ( $updated_ipv6 ) {
+            $notices .= $this->fail2wp_admin_notice( __( 'Cloudflare IPv6 ranges have been updated in the form. Use Save Changes to store the update.', 'fail2wp' ), 'success' );
+        } elseif ( ! $have_error ) {
+            $notices .= $this->fail2wp_admin_notice( __( 'No changes detected in Cloudflare IP ranges.', 'fail2wp' ), 'info' );
+        }
+        if ( $have_error ) {
+            $notices .= $this->fail2wp_admin_notice( __( 'An error occurred while fetching Cloudflare IP ranges. No changes were made for the affected field.', 'fail2wp' ), 'error' );
+        }
+        return( $notices );
     }
 
 
@@ -2657,7 +2889,7 @@ class Fail2WP {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
         }
         $remote_ip = '';
-        if ( empty( $overripde_ip ) ) {
+        if ( empty( $override_ip ) ) {
             if ( $username_is_ip_address ) {
                 // Username string contains IP address (some REST API requests)
                 $remote_ip = $username;
@@ -3257,7 +3489,7 @@ class Fail2WP {
                 if ( ! preg_match( '/^\d{1,3}$/', $split[1] ) ) {
                     // Something else here, invalid
                     $entry_type = VALIDATE_IPHOSTCIDR_INVALID;
-                } elseif ( (int)$split[1] = 128 ) {
+                } elseif ( (int)$split[1] <= 128 ) {
                     $entry_type = VALIDATE_IPHOSTCIDR_IPV6_CIDR;
                 } else {
                     $entry_type = VALIDATE_IPHOSTCIDR_INVALID;
@@ -3644,6 +3876,9 @@ class Fail2WP {
     public function fail2wp_parse_request( \WP $wp ) {
         if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': XMLRPC_REQUEST = true' );
+        }
+        if ( $this->fail2wp_settings_remove_feeds && ! empty( $wp->query_vars['feed'] ) ) {
+            $this->fail2wp_die_feed_disabled();
         }
         // Check for user enumeration
         if ( isset( $wp->query_vars['author'] ) ) {

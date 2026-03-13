@@ -19,8 +19,8 @@ class CIDRmatch
     public function match($ip, $cidr)
     {
         $c = explode('/', $cidr);
-        $subnet = isset($c[0]) ? $c[0] : NULL;
-        $mask   = isset($c[1]) ? $c[1] : NULL;
+        $subnet = $c[0] ?? NULL;
+        $mask   = $c[1] ?? NULL;
 
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             // it's valid
@@ -57,7 +57,7 @@ class CIDRmatch
     // inspired by: http://stackoverflow.com/questions/7951061/matching-ipv6-address-to-a-cidr-subnet
     private function IPv6MaskToByteArray($subnetMask)
     {
-        $addr = str_repeat("f", $subnetMask / 4);
+        $addr = str_repeat("f", intdiv($subnetMask, 4));
         switch ($subnetMask % 4) {
             case 0:
                 break;

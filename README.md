@@ -1,12 +1,14 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.4\+](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.9-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.4](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![PHP 8.2](https://img.shields.io/badge/PHP-8.2-blue?style=flat-square)](https://php.net) [![PHP 8.3](https://img.shields.io/badge/PHP-8.3-blue?style=flat-square)](https://php.net) [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.9-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
-Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1.x.
+Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1/8.2/8.3, with local compatibility checks on PHP 8.4.
 
 ## Description
 
 This WordPress plugin provides security functionality and integration with Fail2ban and Cloudflare.
+
+It does not require fail2ban to function.
 
 The WordPress slug is `fail2wp`.
 
@@ -33,8 +35,9 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 ### Other notes
 
 * This plugin `may` work with earlier versions of WordPress
-* This plugin has been tested with `WordPress 5.5.x and 6.x` at the time of this writing
-* This plugin has been tested with `PHP 7.4, and 8.1.x` at the time of this writing
+* This plugin has been tested with `WordPress 5.5+ and 6.x` at the time of this writing
+* This plugin has been tested with `PHP 7.4, 8.1, 8.2, and 8.3` at the time of this writing
+* Local syntax/runtime compatibility checks have also been run on `PHP 8.4`
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -44,9 +47,10 @@ The plugin also plays nicely with Fail2ban, which is an advanced way of blocking
 
 This section describes how to install the plugin and get it working.
 
-1. Upload the `fail2wp` folder to the `/wp-content/plugins/` directory (or install it from the 'Plugins' menu in WordPress)
+1. Upload the contents of the `fail2wp` folder to the `/wp-content/plugins/` directory (or install it from the 'Plugins' menu in WordPress)
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Configure the basic settings
+4. To enable fail2ban integration, modify your fail2ban configuration. Please see `FAIL2BAN.txt` or `FAIL2BAN.md`.
 
 ## Frequently Asked Questions
 
@@ -68,6 +72,22 @@ This is a hard question to answer. There are no known incompatibilities.
 4. Re-start Fail2ban
 
 ## Changelog
+
+### 1.2.5
+* Added an admin-side helper to fetch current Cloudflare IPv4 and IPv6 ranges into the settings form without auto-saving
+* Improved the Cloudflare tab UX so the ranges and refresh controls stay available but are visually muted when Cloudflare support is disabled
+* Changed disabled feed requests to return `404` instead of redirecting to the home page
+* Extended user enumeration blocking/logging to cover unauthenticated REST users endpoints
+* Fixed the REST `users` route block so it also covers individual user endpoints
+* Fixed REST route blocking so route-only rules are activated correctly
+* Fixed REST handling so logged in and authenticated requests bypass REST blocking
+* Fixed override IP handling for security/fail2ban alert messages
+* Fixed IPv6 CIDR validation for login allow and deny lists
+* Removed PHP 8.2 and PHP 8.3 dynamic property deprecations
+* Fixed PHP 8.4 syslog signature deprecation while keeping PHP 7.4 compatibility
+* Refreshed the bundled `php-cidr-match` library from current upstream
+* Updated translation assets, including the Cloudflare refresh flow and Swedish admin strings
+* Updated internal version metadata
 
 ### 1.2.4
 * Verified with WordPress 6.8 and WordPress 6.9
@@ -119,6 +139,9 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Upgrade Notice
 
+### 1.2.5
+* Install the new version, no changes have been made to settings.
+
 ### 1.2.1
 * Install the new version, no changes have been made to settings.
 
@@ -139,7 +162,7 @@ This is a hard question to answer. There are no known incompatibilities.
 
 Please see [LICENSE](LICENSE) for a full copy of GPLv2
 
-Copyright (C) 2020-2025 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
+Copyright (C) 2020-2026 [Joaquim Homrighausen](https://github.com/joho1968); all rights reserved.
 
 This file is part of Fail2WP. Fail2WP is free software.
 

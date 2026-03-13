@@ -25,6 +25,16 @@
 .fail2wp-row {
     margin-top: 5px;
 }
+.fail2wp-cloudflare-field {
+    transition: opacity 0.2s ease;
+}
+.fail2wp-soft-disabled {
+    opacity: 0.6;
+}
+.fail2wp-soft-disabled textarea,
+.fail2wp-soft-disabled .button {
+    background: #f6f7f7;
+}
 img.fail2wp-wps-logo {
     display: inline;
     float: left;

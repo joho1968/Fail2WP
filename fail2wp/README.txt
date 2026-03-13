@@ -5,11 +5,11 @@ Tags: fail2ban, authentication, security, admin, firewall
 Requires at least: 5.4.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1.x.
+Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1/8.2/8.3, with local compatibility checks on PHP 8.4
 
 == Description ==
 
@@ -40,7 +40,8 @@ Other notes:
 
 * This plugin **may** work with earlier versions of WordPress
 * This plugin has been tested with **WordPress 5.5+ and 6.x** at the time of this writing
-* This plugin has been tested with **PHP 7.4, and 8.1.x** at the time of this writing
+* This plugin has been tested with **PHP 7.4, 8.1, 8.2, and 8.3** at the time of this writing
+* Local syntax/runtime compatibility checks have also been run on **PHP 8.4**
 * This plugin optionally makes use of `mb_` PHP functions
 * This plugin may create entries in your PHP error log (if active)
 * This plugin contains no Javascript
@@ -66,6 +67,22 @@ Fail2WP uses standard WordPress functionality to handle localization/locale. The
 This is a hard question to answer. There are no known incompatibilities.
 
 == Changelog ==
+
+= 1.2.5 =
+* Added an admin-side helper to fetch current Cloudflare IPv4 and IPv6 ranges into the settings form without auto-saving
+* Improved the Cloudflare tab UX so the ranges and refresh controls stay available but are visually muted when Cloudflare support is disabled
+* Changed disabled feed requests to return `404` instead of redirecting to the home page
+* Extended user enumeration blocking/logging to cover unauthenticated REST users endpoints
+* Fixed the REST `users` route block so it also covers individual user endpoints
+* Fixed REST route blocking so route-only rules are activated correctly
+* Fixed REST handling so logged in and authenticated requests bypass REST blocking
+* Fixed override IP handling for security/fail2ban alert messages
+* Fixed IPv6 CIDR validation for login allow and deny lists
+* Removed PHP 8.2 and PHP 8.3 dynamic property deprecations
+* Fixed PHP 8.4 syslog signature deprecation while keeping PHP 7.4 compatibility
+* Refreshed the bundled `php-cidr-match` library from current upstream
+* Updated translation assets, including the Cloudflare refresh flow and Swedish admin strings
+* Updated internal version metadata
 
 = 1.2.4 =
 * Verified with WordPress 6.8 and WordPress 6.9
@@ -121,6 +138,9 @@ This is a hard question to answer. There are no known incompatibilities.
 
 == Upgrade Notice ==
 
+= 1.2.5 =
+* Install the new version.
+
 = 1.2.0 =
 * Install the new version and walk through the settings.
 * Check your fail2ban configuration against the supplied sample fail2wp.conf!
@@ -142,6 +162,8 @@ This is a hard question to answer. There are no known incompatibilities.
 The Fail2WP Plugin was written by Joaquim Homrighausen while converting caffeine into code.
 
 Fail2WP is sponsored by [WebbPlatsen i Sverige AB](https://webbplatsen.se), Sweden.
+
+Copyright 2020-2026 Joaquim Homrighausen; all rights reserved.
 
 Commercial support and customizations for this plugin is available from WebbPlatsen i Sverige AB in Sweden.
 
