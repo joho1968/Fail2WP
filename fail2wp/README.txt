@@ -9,7 +9,7 @@ Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1/8.2/8.3, with local compatibility checks on PHP 8.4
+Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4-8.4
 
 == Description ==
 
