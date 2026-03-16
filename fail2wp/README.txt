@@ -5,7 +5,7 @@ Tags: fail2ban, authentication, security, admin, firewall
 Requires at least: 5.4.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,13 @@ Fail2WP uses standard WordPress functionality to handle localization/locale. The
 This is a hard question to answer. There are no known incompatibilities.
 
 == Changelog ==
+
+= 1.2.6 =
+* Fixed a nasty REST API regression that could log `Blocked REST API request` even when the REST block settings were not enabled
+* Fixed the same regression so ordinary unauthenticated REST namespace requests are no longer treated as blocked just because user enumeration protection is active
+* Fixed blocked REST API logging so it now respects the "Log blocked requests" setting consistently
+* Verified with WordPress 6.9
+* Updated internal version metadata
 
 = 1.2.5 =
 * Added an admin-side helper to fetch current Cloudflare IPv4 and IPv6 ranges into the settings form without auto-saving
@@ -137,6 +144,9 @@ This is a hard question to answer. There are no known incompatibilities.
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.2.6 =
+* Install the new version.
 
 = 1.2.5 =
 * Install the new version.

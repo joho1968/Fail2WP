@@ -2,7 +2,7 @@
 
 # Fail2WP
 
-Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4/8.1/8.2/8.3, with local compatibility checks on PHP 8.4.
+Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4-8.4.
 
 ## Description
 
@@ -73,6 +73,13 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Changelog
 
+### 1.2.6
+* Fixed a nasty REST API regression that could log `Blocked REST API request` even when the REST block settings were not enabled
+* Fixed the same regression so ordinary unauthenticated REST namespace requests are no longer treated as blocked just because user enumeration protection is active
+* Fixed blocked REST API logging so it now respects the `Log blocked requests` setting consistently
+* Verified with WordPress 6.9
+* Updated internal version metadata
+
 ### 1.2.5
 * Added an admin-side helper to fetch current Cloudflare IPv4 and IPv6 ranges into the settings form without auto-saving
 * Improved the Cloudflare tab UX so the ranges and refresh controls stay available but are visually muted when Cloudflare support is disabled
@@ -139,8 +146,11 @@ This is a hard question to answer. There are no known incompatibilities.
 
 ## Upgrade Notice
 
+### 1.2.6
+* Install the new version.
+
 ### 1.2.5
-* Install the new version, no changes have been made to settings.
+* Install the new version.
 
 ### 1.2.1
 * Install the new version, no changes have been made to settings.

@@ -11,7 +11,7 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.2.5
+ * Version:           1.2.6
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -51,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.2.5'                 );
+define( 'FAIL2WP_VERSION',                 '1.2.6'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -940,6 +940,21 @@ class Fail2WP {
         }
         return( stripos( $wp_route, 'users/' ) === 0 );
     }
+
+    /**
+     * Optionally log blocked REST API requests for Fail2ban.
+     *
+     * @since 1.2.6
+     */
+    protected function fail2wp_rest_alert_blocked_request( string $remote_ip ) {
+        if ( ! $this->fail2wp_rest_filter_log_blocked ) {
+            return;
+        }
+        $alert_message = $this->fail2wp_make_alert_message( $remote_ip, null, FAIL2WP_ALERT_REST_BLOCKED, true );
+        if ( ! empty( $alert_message ) ) {
+            $this->fail2wp_alert_send( $alert_message );
+        }
+    }
     /**
      * Handle majority of REST API filtering.
      *
@@ -973,10 +988,7 @@ class Fail2WP {
             if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                 error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking all REST API requests' );
             }
-            $alert_message = $this->fail2wp_make_alert_message( $remote_ip_cf, null, FAIL2WP_ALERT_REST_BLOCKED, true );
-            if ( ! empty( $alert_message ) ) {
-                $this->fail2wp_alert_send( $alert_message );
-            }
+            $this->fail2wp_rest_alert_blocked_request( $remote_ip_cf );
             return new \WP_Error(
                 'rest_no_route',
                 // This text is taken verbatim from WordPress and will thus be
@@ -1022,14 +1034,11 @@ class Fail2WP {
             }
         }
         // Figure out if we're blocking index requests and if this is one
-        if ( in_array( $route, $namespaces ) ) {
+        if ( $this->fail2wp_rest_filter_block_index && in_array( $route, $namespaces ) ) {
             if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                 error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for index' );
             }
-            $alert_message = $this->fail2wp_make_alert_message( $remote_ip_cf, null, FAIL2WP_ALERT_REST_BLOCKED, true );
-            if ( ! empty( $alert_message ) ) {
-                $this->fail2wp_alert_send( $alert_message );
-            }
+            $this->fail2wp_rest_alert_blocked_request( $remote_ip_cf );
             return new \WP_Error(
                 'rest_no_route',
                 // This text is taken verbatim from WordPress and will thus be
@@ -1045,10 +1054,7 @@ class Fail2WP {
                 if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                     error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for NS "' . $route . '"' );
                 }
-                $alert_message = $this->fail2wp_make_alert_message( $remote_ip_cf, null, FAIL2WP_ALERT_REST_BLOCKED, true );
-                if ( ! empty( $alert_message ) ) {
-                    $this->fail2wp_alert_send( $alert_message );
-                }
+                $this->fail2wp_rest_alert_blocked_request( $remote_ip_cf );
                 return new \WP_Error(
                     'rest_no_route',
                     // This text is taken verbatim from WordPress and will thus be
@@ -1069,10 +1075,7 @@ class Fail2WP {
                 if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                     error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for route "' . $route . '"' );
                 }
-                $alert_message = $this->fail2wp_make_alert_message( $remote_ip_cf, null, FAIL2WP_ALERT_REST_BLOCKED, true );
-                if ( ! empty( $alert_message ) ) {
-                    $this->fail2wp_alert_send( $alert_message );
-                }
+                $this->fail2wp_rest_alert_blocked_request( $remote_ip_cf );
                 return new \WP_Error(
                     'rest_no_route',
                     // This text is taken verbatim from WordPress and will thus be
