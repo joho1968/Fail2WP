@@ -18,6 +18,15 @@
     color: #000;
     background: #fff;
 }
+.fail2wp-config-section > h2:first-child {
+    margin-top: 0;
+}
+.fail2wp-manual-ban .form-table {
+    margin-top: 0;
+}
+.fail2wp-active-bans .widefat {
+    margin-top: 15px;
+}
 .fail2wp-ext-link {
   color: #007bff;
   text-decoration: none;

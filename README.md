@@ -1,4 +1,4 @@
-[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.4](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![PHP 8.2](https://img.shields.io/badge/PHP-8.2-blue?style=flat-square)](https://php.net) [![PHP 8.3](https://img.shields.io/badge/PHP-8.3-blue?style=flat-square)](https://php.net) [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.9-orange?style=flat-square)](https://wordpress.org)
+[![Software License](https://img.shields.io/badge/License-GPL%20v2-green.svg?style=flat-square)](LICENSE) [![PHP 7.4](https://img.shields.io/badge/PHP-7.4-blue?style=flat-square)](https://php.net) [![PHP 8.1](https://img.shields.io/badge/PHP-8.1-blue?style=flat-square)](https://php.net) [![PHP 8.2](https://img.shields.io/badge/PHP-8.2-blue?style=flat-square)](https://php.net) [![PHP 8.3](https://img.shields.io/badge/PHP-8.3-blue?style=flat-square)](https://php.net) [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-blue?style=flat-square)](https://php.net) [![WordPress 5](https://img.shields.io/badge/WordPress-5.8-orange?style=flat-square)](https://wordpress.org) [![WordPress 6](https://img.shields.io/badge/WordPress-6.9-orange?style=flat-square)](https://wordpress.org) [![WordPress 7](https://img.shields.io/badge/WordPress-7.0-orange?style=flat-square)](https://wordpress.org)
 
 # Fail2WP
 
@@ -72,6 +72,15 @@ This is a hard question to answer. There are no known incompatibilities.
 4. Re-start Fail2ban
 
 ## Changelog
+
+### 1.3.0
+* Added optional built-in IP blocking with configurable event threshold, observation window, and ban duration
+* Added exact-IP sitewide 403 enforcement, cache-suppression headers, local block-page rendering, and Cloudflare client-IP handling
+* Added active-ban management and exact-IP bypass entries in wp-admin
+* Added import/export support for IP-blocking configuration and validated active-ban snapshots
+* Added manual exact-IP ban creation and expanded trusted bypass entries to support IPs, CIDR ranges, hostnames, and hostname wildcards
+* Added administrator-account monitoring with immediate WordPress-hook checks, hourly WP-Cron reconciliation, a reviewed baseline, and syslog alerts for differences
+* Added a persistent-object-cache notice; the feature works without one but performs database lookups for uncached ban checks
 
 ### 1.2.6
 * Fixed a nasty REST API regression that could log `Blocked REST API request` even when the REST block settings were not enabled
@@ -210,5 +219,5 @@ Kudos to [Vincent Le Moign and Webalys](https://webalys.com) and [Thomas Lutz](h
 
 These links are not here for any sort of endorsement or marketing, they're purely for informational purposes.
 
-* me; :monkey: https://joho.se and https://github.com/joho1968
+* me; :monkey: https://code.joho.se
 * WebbPlatsen; https://webbplatsen.se and https://code.webbplatsen.net

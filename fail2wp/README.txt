@@ -3,9 +3,9 @@ Contributors: joho68, webbplatsen
 Donate link: https://code.webbplatsen.net/wordpress/fail2wp/
 Tags: fail2ban, authentication, security, admin, firewall
 Requires at least: 5.4.0
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.6
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,13 +33,14 @@ Basic security functionality includes:
 * Detection of Cloudflare IP addresses for logging of actual IP addresses
 * Blocking/Allowing logins from IP addresses, IP ranges, and/or hostnames
 * Partially or fully disable XMLRPC access
+* Monitoring administrator accounts for unexpected role/account changes
 
 The plugin also plays nicely with Fail2ban, which is an advanced way of blocking IP addresses dynamically upon suspicious behavior.
 
 Other notes:
 
 * This plugin **may** work with earlier versions of WordPress
-* This plugin has been tested with **WordPress 5.5+ and 6.x** at the time of this writing
+* This plugin has been tested with **WordPress 5.5-7.0.x** at the time of this writing
 * This plugin has been tested with **PHP 7.4, 8.1, 8.2, and 8.3** at the time of this writing
 * Local syntax/runtime compatibility checks have also been run on **PHP 8.4**
 * This plugin optionally makes use of `mb_` PHP functions
@@ -67,6 +68,15 @@ Fail2WP uses standard WordPress functionality to handle localization/locale. The
 This is a hard question to answer. There are no known incompatibilities.
 
 == Changelog ==
+
+= 1.3.0 =
+* Added optional built-in IP blocking with configurable event threshold, observation window, and ban duration
+* Added exact-IP sitewide 403 enforcement, cache-suppression headers, local block-page rendering, and Cloudflare client-IP handling
+* Added active-ban management and exact-IP bypass entries in wp-admin
+* Added import/export support for IP-blocking configuration and validated active-ban snapshots
+* Added manual exact-IP ban creation and expanded trusted bypass entries to support IPs, CIDR ranges, hostnames, and hostname wildcards
+* Added administrator-account monitoring with immediate WordPress-hook checks, hourly WP-Cron reconciliation, a reviewed baseline, and syslog alerts for differences
+* Added a persistent-object-cache notice; the feature works without one but performs database lookups for uncached ban checks
 
 = 1.2.6 =
 * Fixed a nasty REST API regression that could log `Blocked REST API request` even when the REST block settings were not enabled
@@ -144,6 +154,9 @@ This is a hard question to answer. There are no known incompatibilities.
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+* Configure IP blocking only after adding any trusted administrative IP addresses to the bypass list.
 
 = 1.2.6 =
 * Install the new version.

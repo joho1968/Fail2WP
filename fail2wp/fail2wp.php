@@ -11,7 +11,7 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.2.6
+ * Version:           1.3.0
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -51,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.2.6'                 );
+define( 'FAIL2WP_VERSION',                 '1.3.0'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -63,6 +63,8 @@ define( 'FAIL2WP_ALERT_REST_NOTAUTH',      4                       );
 define( 'FAIL2WP_ALERT_REST_BLOCKED',      5                       );
 define( 'FAIL2WP_ALERT_LOGINIP_BLOCKED',   6                       );
 define( 'FAIL2WP_ALERT_XMLRPC_BLOCKED',    7                       );
+define( 'FAIL2WP_ALERT_IP_BLOCK_CREATED',  8                       );
+define( 'FAIL2WP_ALERT_IP_BLOCK_HIT',      9                       );
 define( 'FAIL2WP_DEFAULT_HTTP_PORT',       80                      );
 define( 'FAIL2WP_DEFAULT_HTTPS_PORT',      443                     );
 define( 'FAIL2WP_DB_VERSION',              2                       );
@@ -92,10 +94,14 @@ if ( defined( 'FAIL2WP_DEBUG' ) && FAIL2WP_DEBUG ) {
 
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-fail2wp-syslog.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/trait-fail2wp-settings.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-fail2wp-ip-blocking-storage.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-fail2wp-admin-user-monitor.php';
 // https://github.com/tholu/php-cidr-match
 if ( ! class_exists( '\fail2wpCIDRmatch\CIDRmatch', false ) ) {
     require_once plugin_dir_path( __FILE__ ) . 'includes/class-fail2wp-cidr.php';
 }
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-fail2wp-cidr-matcher.php';
 
 
 /**
@@ -200,6 +206,7 @@ class Fail2WP_Disable_XMLRPC {
                 $alert_message = $plugin->fail2wp_make_alert_message( '', null, FAIL2WP_ALERT_XMLRPC_BLOCKED, false, $remote_real_ip );
                 if ( ! empty( $alert_message ) ) {
                     $plugin->fail2wp_alert_send( $alert_message );
+                    $plugin->fail2wp_record_ip_blocking_event( $remote_real_ip );
                 }
             } else {
                 error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {fail2wp_disable_xmlrpc} Not informing fail2ban about XMLRPC access attempt from ' . $ip_message . ' (localhost)' );
@@ -221,6 +228,8 @@ class Fail2WP_Disable_XMLRPC {
  * Fail2WP class
  */
 class Fail2WP {
+    use Fail2WP_Settings;
+
     public static $instance = null;
     protected $fail2wp_mail_headers;                            // @since 1.1.0
     protected $fail2wp_have_mbstring;                           // @since 1.1.0
@@ -278,6 +287,14 @@ class Fail2WP {
     protected $fail2wp_xmlrpc_disable_pingback;                 // @since 1.2.0
     protected $fail2wp_xmlrpc_disable_everything;               // @since 1.2.0
     protected $fail2wp_xmlrpc_inform_fail2ban;                  // @since 1.2.0
+
+    protected $fail2wp_ip_blocking_enable;                      // @since 1.3.0
+    protected $fail2wp_ip_blocking_threshold;                   // @since 1.3.0
+    protected $fail2wp_ip_blocking_window;                      // @since 1.3.0
+    protected $fail2wp_ip_blocking_duration;                    // @since 1.3.0
+    protected $fail2wp_ip_blocking_bypass;                      // @since 1.3.0
+
+    protected $fail2wp_admin_monitor_enable;                    // @since 1.3.0
 
     protected $fail2wp_cidrm;                                   // @since 1.2.0
     protected $fail2wp_login_url_modify;
@@ -568,6 +585,17 @@ class Fail2WP {
         $this->fail2wp_xmlrpc_disable_everything = get_option( 'fail2wp-xmlrpc-disable-everything', false );
         // .. Inform fail2ban about XMLRPC "failures" @since 1.2.0
         $this->fail2wp_xmlrpc_inform_fail2ban = get_option( 'fail2wp-xmlrpc-inform-fail2ban', false );
+        // ..IP blocking @since 1.3.0
+        $this->fail2wp_ip_blocking_enable = (bool) get_option( 'fail2wp-ip-blocking-enable', false );
+        $this->fail2wp_ip_blocking_threshold = (int) get_option( 'fail2wp-ip-blocking-threshold', 5 );
+        $this->fail2wp_ip_blocking_window = (int) get_option( 'fail2wp-ip-blocking-window', 600 );
+        $this->fail2wp_ip_blocking_duration = (int) get_option( 'fail2wp-ip-blocking-duration', 3600 );
+        $this->fail2wp_ip_blocking_bypass = @ json_decode( get_option( 'fail2wp-ip-blocking-bypass', '[]' ), true, 2 );
+        if ( ! is_array( $this->fail2wp_ip_blocking_bypass ) ) {
+            $this->fail2wp_ip_blocking_bypass = array();
+        }
+        // ..Administrator-account monitor @since 1.3.0
+        $this->fail2wp_admin_monitor_enable = (bool) get_option( 'fail2wp-admin-monitor-enable', false );
         // ..Other options
         $this->fail2wp_settings_remove_generator = get_option( 'fail2wp-settings-remove-generator', null );
         if ( $this->fail2wp_settings_remove_generator === null || ! $this->fail2wp_settings_remove_generator ) {
@@ -643,7 +671,7 @@ class Fail2WP {
         $this->fail2wp_login_admin_url = 'admin';
 
         // Our CIDR matcher
-        $this->fail2wp_cidrm = new \fail2wpCIDRmatch\CIDRmatch();
+        $this->fail2wp_cidrm = new Fail2WP_Cidr_Matcher();
 
         // Load (and possibly invalidate) our hostname cache @since 1.2.0
         $this->fail2wp_hostname_cache_updated = false;
@@ -684,7 +712,7 @@ class Fail2WP {
 
         // Validate selected configuration tab
         $this->fail2wp_settings_tab = ( isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '' );
-        if ( ! in_array( $this->fail2wp_settings_tab, ['loginip', 'newuser', 'logging', 'advanced', 'restapi', 'xmlrpc', 'cloudflare', 'importexport', 'about'] ) ) {
+        if ( ! in_array( $this->fail2wp_settings_tab, ['loginip', 'ipblocking', 'newuser', 'adminmonitor', 'logging', 'advanced', 'restapi', 'xmlrpc', 'cloudflare', 'importexport', 'about'] ) ) {
             $this->fail2wp_settings_tab = '';
         }
         // Add 'Settings' link in plugin list
@@ -864,6 +892,7 @@ class Fail2WP {
                 $alert_message = $this->fail2wp_make_alert_message( '', null, FAIL2WP_ALERT_REST_NOTAUTH );
                 if ( ! empty( $alert_message ) ) {
                     $this->fail2wp_alert_send( $alert_message );
+                    $this->fail2wp_record_ip_blocking_event();
                 }
             }
             // This text is taken verbatim from WordPress and will thus be
@@ -953,6 +982,7 @@ class Fail2WP {
         $alert_message = $this->fail2wp_make_alert_message( $remote_ip, null, FAIL2WP_ALERT_REST_BLOCKED, true );
         if ( ! empty( $alert_message ) ) {
             $this->fail2wp_alert_send( $alert_message );
+            $this->fail2wp_record_ip_blocking_event();
         }
     }
     /**
@@ -1023,6 +1053,7 @@ class Fail2WP {
                 $alert_message = $this->fail2wp_make_alert_message( $remote_ip_cf, null, FAIL2WP_ALERT_USER_ENUM, true );
                 if ( ! empty( $alert_message ) ) {
                     $this->fail2wp_alert_send( $alert_message );
+                    $this->fail2wp_record_ip_blocking_event();
                 }
             }
             if ( $this->fail2wp_block_user_enum ) {
@@ -1460,6 +1491,10 @@ class Fail2WP {
         $tab_notice = '';
         if ( $this->fail2wp_settings_tab == 'cloudflare' ) {
             $tab_notice = $this->fail2wp_handle_cloudflare_refresh();
+        } elseif ( $this->fail2wp_settings_tab == 'ipblocking' ) {
+            $tab_notice = $this->fail2wp_handle_ip_blocking_actions();
+        } elseif ( $this->fail2wp_settings_tab == 'adminmonitor' ) {
+            $tab_notice = $this->fail2wp_handle_admin_monitor_actions();
         }
         //
         $html = '';
@@ -1473,8 +1508,14 @@ class Fail2WP {
         $tab_header .= '<a href="' . $action . '&tab=loginip" class="nav-tab' . ( $this->fail2wp_settings_tab === 'loginip' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Login IP', 'fail2wp' ) .
                  '</a>';
+        $tab_header .= '<a href="' . $action . '&tab=ipblocking" class="nav-tab' . ( $this->fail2wp_settings_tab === 'ipblocking' ? ' nav-tab-active':'' ) . '">'.
+                 esc_html__( 'IP blocking', 'fail2wp' ) .
+                 '</a>';
         $tab_header .= '<a href="' . $action . '&tab=newuser" class="nav-tab' . ( $this->fail2wp_settings_tab === 'newuser' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'New users', 'fail2wp' ) .
+                 '</a>';
+        $tab_header .= '<a href="' . $action . '&tab=adminmonitor" class="nav-tab' . ( $this->fail2wp_settings_tab === 'adminmonitor' ? ' nav-tab-active':'' ) . '">'.
+                 esc_html__( 'Admin monitor', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '<a href="' . $action . '&tab=logging" class="nav-tab' . ( $this->fail2wp_settings_tab === 'logging' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'User logging', 'fail2wp' ) .
@@ -1557,6 +1598,12 @@ class Fail2WP {
                     $warn_about_site_label = false;
                     $import_result = '';
                     foreach( $xs as $k => $v ) {
+                        if ( $k === 'fail2wp_ip_blocking_active_bans' ) {
+                            if ( ! is_array( $v ) || ! Fail2WP_IP_Blocking_Storage::replace_active_bans( $v ) ) {
+                                $import_result .= '  ' . str_replace( '_', '-', $k ) . '<br/>';
+                            }
+                            continue;
+                        }
                         if ( ! property_exists( $this, $k ) ) {
                             $import_result .= '  ' . str_replace( '_', '-', $k ) . '<br/>';
                             continue;
@@ -1573,6 +1620,7 @@ class Fail2WP {
                             case 'fail2wp_reguser_useremail_require':
                             case 'fail2wp_rest_filter_ipv4_bypass':
                             case 'fail2wp_rest_filter_ipv6_bypass':
+                            case 'fail2wp_ip_blocking_bypass':
                                 // Some special treatment of these since WordPress
                                 // calls the registered sanitization functions for
                                 // update_option()
@@ -1626,7 +1674,7 @@ class Fail2WP {
                 }
             }// import settings
             if ( ! $do_import ) {
-                $html .= '<p>' . esc_html__( 'This tab can be used to import and export settings for the plugin.', 'fail2wp' ) . '</p>';
+                $html .= '<p>' . esc_html__( 'This tab can be used to import and export plugin settings and active IP-blocking bans.', 'fail2wp' ) . '</p>';
                 $html .= '<table class="form-table" role="presentation">';
                 $html .= '<tr><th scope="row">'.
                          '<label for="fail2wp-import-settings">' .
@@ -1690,6 +1738,13 @@ class Fail2WP {
                     'fail2wp_xmlrpc_disable_pingback'       => $this->fail2wp_xmlrpc_disable_pingback,
                     'fail2wp_xmlrpc_disable_everything'     => $this->fail2wp_xmlrpc_disable_everything,
                     'fail2wp_xmlrpc_inform_fail2ban'        => $this->fail2wp_xmlrpc_inform_fail2ban,
+                    'fail2wp_ip_blocking_enable'            => $this->fail2wp_ip_blocking_enable,
+                    'fail2wp_ip_blocking_threshold'         => $this->fail2wp_ip_blocking_threshold,
+                    'fail2wp_ip_blocking_window'            => $this->fail2wp_ip_blocking_window,
+                    'fail2wp_ip_blocking_duration'          => $this->fail2wp_ip_blocking_duration,
+                    'fail2wp_ip_blocking_bypass'            => $this->fail2wp_ip_blocking_bypass,
+                    'fail2wp_ip_blocking_active_bans'       => Fail2WP_IP_Blocking_Storage::get_active_bans(),
+                    'fail2wp_admin_monitor_enable'          => $this->fail2wp_admin_monitor_enable,
                 );
                 /* Not included:
                     'fail2wp_default_http_port'             => $this->fail2wp_default_http_port,
@@ -1708,7 +1763,7 @@ class Fail2WP {
                 }
                 $html .= '</textarea>' .
                          '<p class="description">' .
-                         esc_html__( 'Copy the text in this field to export your settings to another site', 'fail2wp' ) .
+                         esc_html__( 'Copy the text in this field to export your settings and active IP-blocking bans to another site', 'fail2wp' ) .
                          '</p>' .
                          '</td></tr>';
                 $html .= '</table>';
@@ -1730,9 +1785,19 @@ class Fail2WP {
                     settings_fields( 'fail2wp_settings_loginip' );
                     do_settings_sections( 'fail2wp_settings_loginip' );
                     break;
+                case 'ipblocking':
+                    settings_fields( 'fail2wp_settings_ipblocking' );
+                    settings_errors( 'fail2wp-ip-blocking-bypass' );
+                    do_settings_sections( 'fail2wp_settings_ipblocking' );
+                    $this->fail2wp_ip_blocking_active_bans();
+                    break;
                 case 'newuser':
                     settings_fields( 'fail2wp_settings_newuser' );
                     do_settings_sections( 'fail2wp_settings_newuser' );
+                    break;
+                case 'adminmonitor':
+                    settings_fields( 'fail2wp_settings_adminmonitor' );
+                    do_settings_sections( 'fail2wp_settings_adminmonitor' );
                     break;
                 case 'logging':
                     $html .= '<p>' .
@@ -1821,177 +1886,6 @@ class Fail2WP {
              '</p>' .
              '</div>';
         echo '</div>';
-    }
-
-
-    /**
-     * Display settings.
-     *
-     * @since  1.0.0
-     */
-    public function fail2wp_settings() {
-        if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return;
-        }
-        add_settings_section( 'fail2wp-settings', '', false, 'fail2wp-settings' );
-          add_settings_field( 'fail2wp-site-label', esc_html__( 'Site label', 'fail2wp' ), [$this, 'fail2wp_setting_site_label'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-site-label'] );
-          add_settings_field( 'fail2wp-block-user-enum', esc_html__( 'Block user enum', 'fail2wp' ), [$this, 'fail2wp_setting_block_enums'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-block-user-enum'] );
-          add_settings_field( 'fail2wp-block-username-login', esc_html__( 'Block username login', 'fail2wp' ), [$this, 'fail2wp_setting_block_username_login'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-block-username-login'] );
-          add_settings_field( 'fail2wp-secure-login-message', esc_html__( 'Secure login messages', 'fail2wp' ), [$this, 'fail2wp_setting_secure_login_messages'], 'fail2wp-settings', 'fail2wp-settings', ['label_for' => 'fail2wp-secure-login-message'] );
-
-        add_settings_section( 'fail2wp_section_other', esc_html__( 'Other settings', 'fail2wp' ), false, 'fail2wp-settings' );
-          add_settings_field( 'fail2wp-settings-remove-generator', esc_html__( 'Remove generator info', 'fail2wp' ), [$this, 'fail2wp_setting_remove_generator'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove-generator'] );
-          add_settings_field( 'fail2wp-settings-remove-feeds', esc_html__( 'Remove feeds', 'fail2wp' ), [$this, 'fail2wp_setting_remove_feeds'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove-feeds'] );
-          add_settings_field( 'fail2wp-settings-remove', esc_html__( 'Remove settings', 'fail2wp' ), [$this, 'fail2wp_setting_remove'], 'fail2wp-settings', 'fail2wp_section_other', ['label_for' => 'fail2wp-settings-remove'] );
-        add_settings_section( 'fail2wp_section_loginip',
-                              '',
-                              [$this, 'fail2wp_settings_loginip_callback'],
-                              'fail2wp_settings_loginip' );
-          add_settings_field( 'fail2wp-loginip-enable',
-                              esc_html__( 'Login IP check enabled', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_loginip_enable'],
-                              'fail2wp_settings_loginip',
-                              'fail2wp_section_loginip',
-                              ['label_for' => 'fail2wp-loginip-enable'] );
-          add_settings_field( 'fail2wp-loginip-testmode',
-                              esc_html__( 'Login IP check testmode', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_loginip_testmode'],
-                              'fail2wp_settings_loginip',
-                              'fail2wp_section_loginip',
-                              ['label_for' => 'fail2wp-loginip-testmode'] );
-          add_settings_field( 'fail2wp-loginip-inform-fail2ban',
-                              esc_html__( 'Notify fail2ban', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_loginip_inform_fail2ban'],
-                              'fail2wp_settings_loginip',
-                              'fail2wp_section_loginip',
-                              ['label_for' => 'fail2wp-loginip-inform-fail2ban'] );
-          add_settings_field( 'fail2wp-loginip-dnscache',
-                              esc_html__( 'Cache DNS lookups', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_loginip_dnscache'],
-                              'fail2wp_settings_loginip',
-                              'fail2wp_section_loginip',
-                              ['label_for' => 'fail2wp-loginip-dnscache'] );
-          add_settings_field( 'fail2wp-loginip-allow',
-                              esc_html__( 'Allow list', 'fail2wp' ),
-                              [$this, 'fail2wp_settings_loginip_allow'],
-                              'fail2wp_settings_loginip',
-                              'fail2wp_section_loginip',
-                              ['label_for' => 'fail2wp-loginip-allow'] );
-          add_settings_field( 'fail2wp-loginip-deny',
-                              esc_html__( 'Deny list', 'fail2wp' ),
-                              [$this, 'fail2wp_settings_loginip_deny'],
-                              'fail2wp_settings_loginip',
-                              'fail2wp_section_loginip',
-                              ['label_for' => 'fail2wp-loginip-deny'] );
-        add_settings_section( 'fail2wp_section_newuser', '', false, 'fail2wp_settings_newuser' );
-          add_settings_field( 'fail2wp-reguser-warn', esc_html__( 'Membership warnings', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_warn'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-warn'] );
-          add_settings_field( 'fail2wp-reguser-warn-role', esc_html__( 'Check for role', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_warn_role'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-warn-role'] );
-          add_settings_field( 'fail2wp-reguser-force', esc_html__( 'Force role', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_force'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-force'] );
-          add_settings_field( 'fail2wp-reguser-force-role', esc_html__( 'Role to force', 'fail2wp' ), [$this, 'fail2wp_setting_reguser_force_role'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-force-role'] );
-          add_settings_field( 'fail2wp-reguser-username-length', esc_html__( 'Minimum username length', 'fail2wp' ), [$this, 'fail2wp_settings_reguser_username_length'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-username-length'] );
-          add_settings_field( 'fail2wp-reguser-username-ban', esc_html__( 'Banned usernames', 'fail2wp' ), [$this, 'fail2wp_settings_reguser_username_ban'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-username-ban'] );
-          add_settings_field( 'fail2wp-reguser-useremail-require', esc_html__( 'E-mail must match', 'fail2wp' ), [$this, 'fail2wp_settings_reguser_useremail_require'], 'fail2wp_settings_newuser', 'fail2wp_section_newuser', ['label_for' => 'fail2wp-reguser-useremail-require'] );
-
-        add_settings_section( 'fail2wp_settings_notify', '', false, 'fail2wp_settings_notify' );
-          add_settings_field( 'fail2wp-roles-notify', esc_html__( 'Successful login', 'fail2wp' ), [$this, 'fail2wp_setting_roles_notify'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-roles-notify'] );
-          add_settings_field( 'fail2wp-roles-warn', esc_html__( 'Unsuccessful login', 'fail2wp' ), [$this, 'fail2wp_setting_roles_warn'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-roles-warn'] );
-          add_settings_field( 'fail2wp-unknown-warn', '', [$this, 'fail2wp_setting_unknown_notify'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-unknown-warn'] );
-          add_settings_field( 'fail2wp-log-user-enum', esc_html__( 'Log user enum', 'fail2wp' ), [$this, 'fail2wp_setting_log_enums'], 'fail2wp_settings_notify', 'fail2wp_settings_notify', ['label_for' => 'fail2wp-log-user-enum'] );
-
-        add_settings_section( 'fail2wp_section_restapi', '', [$this, 'fail2wp_settings_restapi_callback'], 'fail2wp_settings_restapi' );
-          add_settings_field( 'fail2wp-rest-filter-require-authenticated', esc_html__( 'Require authentication', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_require_authenticated'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-require-authenticated'] );
-          add_settings_field( 'fail2wp-rest-filter-log-blocked', esc_html__( 'Log blocked requests', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_log_blocked'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-log-blocked'] );
-          add_settings_field( 'fail2wp-rest-filter-block-index', esc_html__( 'Block index requests', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_block_index'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-index'] );
-          add_settings_field( 'fail2wp-rest-filter-block-all', esc_html__( 'Block all requests', 'fail2wp' ), [$this, 'fail2wp_setting_rest_filter_block_all'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-all'] );
-          add_settings_field( 'fail2wp-rest-filter-block-ns', esc_html__( 'Block specific namespaces', 'fail2wp' ),   [$this, 'fail2wp_setting_rest_filter_block_ns'],  'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-ns'] );
-          add_settings_field( 'fail2wp-rest-filter-block-routes', esc_html__( 'Block specific routes', 'fail2wp' ),   [$this, 'fail2wp_setting_rest_filter_block_routes'],  'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-block-routes'] );
-          add_settings_field( 'fail2wp-rest-filter-ipv4-bypass', esc_html__( 'Bypass blocks for IPv4', 'fail2wp' ), [$this, 'fail2wp_settings_rest_filter_bypass_ipv4'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-ipv4-bypass'] );
-          add_settings_field( 'fail2wp-rest-filter-ipv6-bypass', esc_html__( 'Bypass blocks for IPv6', 'fail2wp' ), [$this, 'fail2wp_settings_rest_filter_bypass_ipv6'], 'fail2wp_settings_restapi', 'fail2wp_section_restapi', ['label_for' => 'fail2wp-rest-filter-ipv6-bypass'] );
-
-        add_settings_section( 'fail2wp_section_xmlrpc', '', [$this, 'fail2wp_settings_xmlrpc_callback'], 'fail2wp_settings_xmlrpc' );
-          add_settings_field( 'fail2wp-xmlrpc-disable',
-                              esc_html__( 'Disable XMLRPC auth', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_xmlrpc_disable'],
-                              'fail2wp_settings_xmlrpc',
-                              'fail2wp_section_xmlrpc',
-                              ['label_for' => 'fail2wp-xmlrpc-disable'] );
-          add_settings_field( 'fail2wp-xmlrpc-disable-pingback',
-                              esc_html__( 'Disable XMLRPC pingbacks', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_xmlrpc_disable_pingback'],
-                              'fail2wp_settings_xmlrpc',
-                              'fail2wp_section_xmlrpc',
-                              ['label_for' => 'fail2wp-xmlrpc-disable-pingback'] );
-          add_settings_field( 'fail2wp-xmlrpc-disable-everything',
-                              esc_html__( 'Disable XMLRPC completely', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_xmlrpc_disable_everything'],
-                              'fail2wp_settings_xmlrpc',
-                              'fail2wp_section_xmlrpc',
-                              ['label_for' => 'fail2wp-xmlrpc-disable-everything'] );
-          add_settings_field( 'fail2wp-xmlrpc-inform-fail2ban',
-                              esc_html__( 'Notify fail2ban', 'fail2wp' ),
-                              [$this, 'fail2wp_setting_xmlrpc_inform_fail2ban'],
-                              'fail2wp_settings_xmlrpc',
-                              'fail2wp_section_xmlrpc',
-                              ['label_for' => 'fail2wp-xmlrpc-inform-fail2ban'] );
-
-        add_settings_section( 'fail2wp_settings_advanced', '', [$this, 'fail2wp_settings_advanced_callback'], 'fail2wp_settings_advanced' );
-          add_settings_field( 'fail2wp-prefix', esc_html__( 'Logging prefix', 'fail2wp' ), [$this, 'fail2wp_settings_prefix'], 'fail2wp_settings_advanced', 'fail2wp_settings_advanced', ['label_for' => 'fail2wp-prefix'] );
-          add_settings_field( 'fail2wp-also-log-php', esc_html__( 'Also log to PHP log', 'fail2wp' ), [$this, 'fail2wp_setting_also_log_php'], 'fail2wp_settings_advanced', 'fail2wp_settings_advanced', ['label_for' => 'fail2wp-also-log-php'] );
-
-        add_settings_section( 'fail2wp_settings_cloudflare', '', [$this, 'fail2wp_settings_cloudflare_callback'], 'fail2wp_settings_cloudflare' );
-          add_settings_field( 'fail2wp-cloudflare-check', esc_html__( 'Check for Cloudflare IP', 'fail2wp' ), [$this, 'fail2wp_setting_cloudflare_check'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-check'] );
-          add_settings_field( 'fail2wp-cloudflare-ipv4', esc_html__( 'Cloudflare IPv4', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_ipv4'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv4'] );
-          add_settings_field( 'fail2wp-cloudflare-ipv6', esc_html__( 'Cloudflare IPv6', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_ipv6'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-ipv6'] );
-          add_settings_field( 'fail2wp-cloudflare-refresh', esc_html__( 'Refresh Cloudflare IPs', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_refresh'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-refresh'] );
-
-        register_setting( 'fail2wp-settings', 'fail2wp-site-label', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_site_label']] );
-        register_setting( 'fail2wp-settings', 'fail2wp-block-user-enum' );
-        register_setting( 'fail2wp-settings', 'fail2wp-block-username-login' );
-        register_setting( 'fail2wp-settings', 'fail2wp-secure-login-message' );
-        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-generator' );
-        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-feeds' );
-        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove' );
-
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-enable' );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-testmode' );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-inform-fail2ban' );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-dnscache', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_dnscache']] );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-allow', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']]  );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-deny', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']]  );
-
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable' );
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable-pingback' );
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable-everything' );
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-inform-fail2ban' );
-
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-warn' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-warn-role' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-force' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-force-role' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-username-length', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_username_length']] );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-username-ban', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-useremail-require', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
-
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-roles-notify', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_roles']] );
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-roles-warn', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_roles']] );
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-unknown-warn' );
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-log-user-enum' );
-
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-require-authenticated' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-log-blocked' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-index' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-all' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-ns', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_block_ns']] );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-routes', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_block_routes']] );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-ipv4-bypass', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-ipv6-bypass', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
-
-        register_setting( 'fail2wp_settings_advanced', 'fail2wp-prefix', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_advanced']] );
-        register_setting( 'fail2wp_settings_advanced', 'fail2wp-also-log-php' );
-
-        register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-check' );
-        register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-ipv4', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
-        register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-ipv6', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
     }
 
 
@@ -2158,6 +2052,84 @@ class Fail2WP {
         }
         return( $input );
     }
+    public function fail2wp_setting_sanitize_ip_blocking_threshold( $input ) : int {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return( 5 );
+        }
+        return( max( 1, min( 1000, absint( $input ) ) ) );
+    }
+    public function fail2wp_setting_sanitize_ip_blocking_seconds( $input ) : int {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return( 600 );
+        }
+        return( max( 60, min( 2592000, absint( $input ) ) ) );
+    }
+    protected function fail2wp_get_ip_blocking_bypass_entry_type( string $entry ) : int {
+        if ( filter_var( $entry, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+            return( VALIDATE_IPHOSTCIDR_IPV4 );
+        }
+        if ( filter_var( $entry, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+            return( VALIDATE_IPHOSTCIDR_IPV6 );
+        }
+        $split = explode( '/', $entry );
+        if ( count( $split ) === 2 ) {
+            if ( filter_var( $split[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) && preg_match( '/^\d{1,2}$/', $split[1] ) && (int) $split[1] <= 32 ) {
+                return( VALIDATE_IPHOSTCIDR_IPV4_CIDR );
+            }
+            if ( filter_var( $split[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) && preg_match( '/^\d{1,3}$/', $split[1] ) && (int) $split[1] <= 128 ) {
+                return( VALIDATE_IPHOSTCIDR_IPV6_CIDR );
+            }
+            return( VALIDATE_IPHOSTCIDR_INVALID );
+        }
+        if ( filter_var( $entry, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME ) && substr( $entry, -1 ) !== '.' && ( strpos( $entry, '.' ) !== false || $entry === 'localhost' ) ) {
+            return( VALIDATE_IPHOSTCIDR_HOSTNAME );
+        }
+        $hostname = str_replace( array( '*', '?' ), 'a', $entry );
+        if ( $this->fail2wp_hostname_has_wildcard( $entry ) && substr_count( $entry, '.' ) >= 2 && preg_match( '/^[a-z0-9*?.-]+$/', $entry ) && filter_var( $hostname, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME ) && substr( $entry, -1 ) !== '.' ) {
+            return( VALIDATE_IPHOSTCIDR_HOSTNAME_WC );
+        }
+        return( VALIDATE_IPHOSTCIDR_INVALID );
+    }
+    public function fail2wp_setting_sanitize_ip_blocking_bypass( $input ) : string {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return( wp_json_encode( array() ) );
+        }
+        $input = sanitize_textarea_field( $input );
+        $entries = @ json_decode( $input, true, 2 );
+        if ( ! is_array( $entries ) ) {
+            $entries = preg_split( '/[\s,]+/', $input );
+        }
+        $output = array();
+        $invalid_entries = array();
+        if ( is_array( $entries ) ) {
+            foreach ( $entries as $entry ) {
+                $entry = strtolower( trim( $entry ) );
+                if ( empty( $entry ) ) {
+                    continue;
+                }
+                if ( $this->fail2wp_get_ip_blocking_bypass_entry_type( $entry ) !== VALIDATE_IPHOSTCIDR_INVALID ) {
+                    $output[] = $entry;
+                } else {
+                    $invalid_entries[] = $entry;
+                }
+            }
+        }
+        if ( ! empty( $invalid_entries ) ) {
+            static $reported_invalid_entries = array();
+            $invalid_entries = array_unique( $invalid_entries );
+            $error_key = implode( ',', $invalid_entries );
+            if ( ! isset( $reported_invalid_entries[$error_key] ) ) {
+                add_settings_error(
+                    'fail2wp-ip-blocking-bypass',
+                    'fail2wp_ip_blocking_bypass_invalid',
+                    sprintf( __( 'The following bypass entries were not saved because they are invalid: %s', 'fail2wp' ), implode( ', ', $invalid_entries ) ),
+                    'error'
+                );
+                $reported_invalid_entries[$error_key] = true;
+            }
+        }
+        return( wp_json_encode( array_values( array_unique( $output ) ) ) );
+    }
     /**
      * Output input fields.
      *
@@ -2286,6 +2258,63 @@ class Fail2WP {
         echo esc_html( implode( "\n", $this->fail2wp_loginip_deny ) );
         echo '</textarea>';
         echo '<p class="description">' . esc_html__( 'IPs matching these addresses will be prevented from logging in', 'fail2wp' ) . '</p>';
+    }
+    public function fail2wp_settings_ip_blocking_callback() {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return;
+        }
+        echo '<p>' . esc_html__( 'Temporarily blocks an exact client IP after it reaches the configured number of security events. Only events that Fail2WP is configured to log contribute to this counter.', 'fail2wp' ) . '</p>';
+        echo '<p>' . esc_html__( 'Cloudflare client-IP unmasking is applied before counting and blocking. Login allow-list matches retain precedence on the login endpoint.', 'fail2wp' ) . '</p>';
+        echo '<p>' . esc_html__( 'Bypass hostname and wildcard entries use DNS lookups. Prefer exact IP addresses or CIDR ranges when possible to avoid lookup latency.', 'fail2wp' ) . '</p>';
+        if ( ! wp_using_ext_object_cache() ) {
+            echo '<p><strong><span class="dashicons dashicons-warning"></span>&nbsp;' . esc_html__( 'NOTE', 'fail2wp' ) . ':</strong> ' . esc_html__( 'No persistent object cache is available. IP blocking still works, but each sitewide ban check may require a database lookup.', 'fail2wp' ) . '</p>';
+        }
+    }
+    public function fail2wp_setting_ip_blocking_enable() {
+        echo '<label for="fail2wp-ip-blocking-enable"><input type="checkbox" name="fail2wp-ip-blocking-enable" id="fail2wp-ip-blocking-enable" value="1" ' . checked( $this->fail2wp_ip_blocking_enable, 1, false ) . '/> ' . esc_html__( 'Enable temporary sitewide IP blocking', 'fail2wp' ) . '</label>';
+    }
+    public function fail2wp_setting_ip_blocking_threshold() {
+        echo '<input type="number" min="1" max="1000" id="fail2wp-ip-blocking-threshold" name="fail2wp-ip-blocking-threshold" value="' . esc_attr( $this->fail2wp_ip_blocking_threshold ) . '" />';
+        echo '<p class="description">' . esc_html__( 'Security events from one IP before a ban is created.', 'fail2wp' ) . '</p>';
+    }
+    public function fail2wp_setting_ip_blocking_window() {
+        echo '<input type="number" min="60" max="2592000" id="fail2wp-ip-blocking-window" name="fail2wp-ip-blocking-window" value="' . esc_attr( $this->fail2wp_ip_blocking_window ) . '" /> ' . esc_html__( 'seconds', 'fail2wp' );
+        echo '<p class="description">' . esc_html__( 'Time period in which events are counted.', 'fail2wp' ) . '</p>';
+    }
+    public function fail2wp_setting_ip_blocking_duration() {
+        echo '<input type="number" min="60" max="2592000" id="fail2wp-ip-blocking-duration" name="fail2wp-ip-blocking-duration" value="' . esc_attr( $this->fail2wp_ip_blocking_duration ) . '" /> ' . esc_html__( 'seconds', 'fail2wp' );
+        echo '<p class="description">' . esc_html__( 'How long a new or refreshed ban remains active.', 'fail2wp' ) . '</p>';
+    }
+    public function fail2wp_setting_ip_blocking_bypass() {
+        echo '<textarea rows="5" cols="30" id="fail2wp-ip-blocking-bypass" name="fail2wp-ip-blocking-bypass" class="large-text code">' . esc_html( implode( "\n", $this->fail2wp_ip_blocking_bypass ) ) . '</textarea>';
+        echo '<p class="description">' . esc_html__( 'Exact IPv4/IPv6 addresses, CIDR ranges, hostnames, or hostname wildcards that must never be blocked. Enter one entry per line; for example, 192.0.2.15, 192.0.2.0/24, admin.example.com, or *.defsol.com.', 'fail2wp' ) . '</p>';
+    }
+    public function fail2wp_settings_admin_monitor_callback() {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return;
+        }
+        echo '<p>' . esc_html__( 'Monitors administrator-role accounts and reports unexpected changes. It is a detection feature and cannot guarantee prevention against a compromised administrator account or direct database changes.', 'fail2wp' ) . '</p>';
+        echo '<p>' . esc_html__( 'Changes are checked immediately when WordPress user and role hooks run, then reconciled hourly through WP-Cron. Configure a real server cron or system timer for reliable scheduled checks on low-traffic sites.', 'fail2wp' ) . '</p>';
+    }
+    public function fail2wp_setting_admin_monitor_enable() {
+        echo '<label for="fail2wp-admin-monitor-enable"><input type="checkbox" name="fail2wp-admin-monitor-enable" id="fail2wp-admin-monitor-enable" value="1" ' . checked( $this->fail2wp_admin_monitor_enable, 1, false ) . '/> ' . esc_html__( 'Monitor administrator accounts and log unexpected changes', 'fail2wp' ) . '</label>';
+    }
+    public function fail2wp_setting_admin_monitor_baseline() {
+        $baseline = Fail2WP_Admin_User_Monitor::get_baseline();
+        $current = Fail2WP_Admin_User_Monitor::get_current_snapshot();
+        $changes = Fail2WP_Admin_User_Monitor::compare( $baseline, $current );
+        $action = admin_url( 'admin.php?page=' . FAIL2WP_PLUGINNAME_SLUG . '&tab=adminmonitor' );
+        if ( empty( $baseline ) ) {
+            echo '<p>' . esc_html__( 'No administrator baseline has been recorded yet. Saving this setting enabled or reviewing the current accounts will establish one.', 'fail2wp' ) . '</p>';
+        } elseif ( Fail2WP_Admin_User_Monitor::has_changes( $changes ) ) {
+            echo '<p><strong>' . esc_html__( 'The current administrator accounts differ from the stored baseline.', 'fail2wp' ) . '</strong></p>';
+        } else {
+            echo '<p>' . esc_html__( 'The current administrator accounts match the stored baseline.', 'fail2wp' ) . '</p>';
+        }
+        echo '<p><code>' . esc_html( implode( ', ', array_values( $current ) ) ) . '</code></p>';
+        echo wp_nonce_field( 'fail2wp_admin_monitor_actions', 'fail2wp_admin_monitor_nonce', true, false );
+        echo '<button type="submit" class="button button-secondary" name="fail2wp-admin-monitor-action" value="baseline" formaction="' . esc_url( $action ) . '" formmethod="post">' . esc_html__( 'Review and update baseline', 'fail2wp' ) . '</button>';
+        echo '<p class="description">' . esc_html__( 'Use this only after intentionally creating, removing, or changing administrator accounts.', 'fail2wp' ) . '</p>';
     }
     public function fail2wp_settings_xmlrpc_callback() {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
@@ -2704,6 +2733,74 @@ class Fail2WP {
             '</strong></p></div>'
         );
     }
+    protected function fail2wp_handle_ip_blocking_actions() : string {
+        if ( empty( $_POST['fail2wp-ip-blocking-action'] ) ) {
+            return( '' );
+        }
+        if ( ! isset( $_POST['fail2wp_ip_blocking_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fail2wp_ip_blocking_nonce'] ) ), 'fail2wp_ip_blocking_actions' ) ) {
+            return( $this->fail2wp_admin_notice( __( 'Unable to verify the IP-blocking request.', 'fail2wp' ), 'error' ) );
+        }
+        $action = sanitize_text_field( wp_unslash( $_POST['fail2wp-ip-blocking-action'] ) );
+        if ( $action === 'clear' ) {
+            Fail2WP_IP_Blocking_Storage::clear_bans();
+            return( $this->fail2wp_admin_notice( __( 'All IP blocks were cleared.', 'fail2wp' ), 'success' ) );
+        }
+        if ( $action === 'add' && ! empty( $_POST['fail2wp-ip-blocking-add-ip'] ) ) {
+            $ip = sanitize_text_field( wp_unslash( $_POST['fail2wp-ip-blocking-add-ip'] ) );
+            $duration = isset( $_POST['fail2wp-ip-blocking-add-duration'] ) ? absint( $_POST['fail2wp-ip-blocking-add-duration'] ) : $this->fail2wp_ip_blocking_duration;
+            $duration = max( 60, min( 2592000, $duration ) );
+            if ( Fail2WP_IP_Blocking_Storage::add_ban( $ip, $duration ) ) {
+                return( $this->fail2wp_admin_notice( __( 'The IP address was blocked.', 'fail2wp' ), 'success' ) );
+            }
+        }
+        if ( strpos( $action, 'remove:' ) === 0 ) {
+            $ip = sanitize_text_field( substr( $action, 7 ) );
+            if ( Fail2WP_IP_Blocking_Storage::remove_ban( $ip ) ) {
+                return( $this->fail2wp_admin_notice( __( 'The IP block was cleared.', 'fail2wp' ), 'success' ) );
+            }
+        }
+        return( $this->fail2wp_admin_notice( __( 'Unable to update the IP block.', 'fail2wp' ), 'error' ) );
+    }
+    protected function fail2wp_handle_admin_monitor_actions() : string {
+        if ( empty( $_POST['fail2wp-admin-monitor-action'] ) ) {
+            return( '' );
+        }
+        if ( ! isset( $_POST['fail2wp_admin_monitor_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fail2wp_admin_monitor_nonce'] ) ), 'fail2wp_admin_monitor_actions' ) ) {
+            return( $this->fail2wp_admin_notice( __( 'Unable to verify the administrator-monitor request.', 'fail2wp' ), 'error' ) );
+        }
+        if ( sanitize_text_field( wp_unslash( $_POST['fail2wp-admin-monitor-action'] ) ) === 'baseline' ) {
+            $baseline = Fail2WP_Admin_User_Monitor::store_baseline();
+            return( $this->fail2wp_admin_notice( sprintf( __( 'Administrator baseline updated with %d account(s).', 'fail2wp' ), count( $baseline ) ), 'success' ) );
+        }
+        return( $this->fail2wp_admin_notice( __( 'Unable to update the administrator baseline.', 'fail2wp' ), 'error' ) );
+    }
+    protected function fail2wp_ip_blocking_active_bans() {
+        $bans = Fail2WP_IP_Blocking_Storage::get_active_bans();
+        $action = admin_url( 'admin.php?page=' . FAIL2WP_PLUGINNAME_SLUG . '&tab=ipblocking' );
+        echo wp_nonce_field( 'fail2wp_ip_blocking_actions', 'fail2wp_ip_blocking_nonce', true, false );
+        echo '<section class="fail2wp-config-section fail2wp-manual-ban" aria-labelledby="fail2wp-manual-ban-heading">';
+        echo '<h2 id="fail2wp-manual-ban-heading">' . esc_html__( 'Block an IP address manually', 'fail2wp' ) . '</h2>';
+        echo '<table class="form-table" role="presentation"><tbody>';
+        echo '<tr><th scope="row"><label for="fail2wp-ip-blocking-add-ip">' . esc_html__( 'IP address', 'fail2wp' ) . '</label></th><td>';
+        echo '<input type="text" class="regular-text code" id="fail2wp-ip-blocking-add-ip" name="fail2wp-ip-blocking-add-ip" inputmode="text" />';
+        echo '<p class="description">' . esc_html__( 'Manual blocks accept exact IPv4 or IPv6 addresses only. Use the bypass list above for trusted CIDR ranges and hostnames.', 'fail2wp' ) . '</p></td></tr>';
+        echo '<tr><th scope="row"><label for="fail2wp-ip-blocking-add-duration">' . esc_html__( 'Duration', 'fail2wp' ) . '</label></th><td>';
+        echo '<input type="number" min="60" max="2592000" id="fail2wp-ip-blocking-add-duration" name="fail2wp-ip-blocking-add-duration" value="' . esc_attr( $this->fail2wp_ip_blocking_duration ) . '" /> ' . esc_html__( 'seconds', 'fail2wp' ) . '</td></tr>';
+        echo '<tr><th scope="row"></th><td><button type="submit" class="button button-secondary" name="fail2wp-ip-blocking-action" value="add" formaction="' . esc_url( $action ) . '" formmethod="post">' . esc_html__( 'Block IP address', 'fail2wp' ) . '</button></td></tr>';
+        echo '</tbody></table></section>';
+        echo '<section class="fail2wp-config-section fail2wp-active-bans" aria-labelledby="fail2wp-active-bans-heading"><h2 id="fail2wp-active-bans-heading">' . esc_html__( 'Active IP blocks', 'fail2wp' ) . '</h2>';
+        if ( empty( $bans ) ) {
+            echo '<p>' . esc_html__( 'There are no active IP blocks.', 'fail2wp' ) . '</p></section>';
+            return;
+        }
+        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'IP address', 'fail2wp' ) . '</th><th>' . esc_html__( 'Hits', 'fail2wp' ) . '</th><th>' . esc_html__( 'Created', 'fail2wp' ) . '</th><th>' . esc_html__( 'Expires', 'fail2wp' ) . '</th><th>' . esc_html__( 'Action', 'fail2wp' ) . '</th></tr></thead><tbody>';
+        foreach ( $bans as $ban ) {
+            echo '<tr><td><code>' . esc_html( $ban['ip'] ) . '</code></td><td>' . esc_html( $ban['hit_count'] ) . '</td><td>' . esc_html( get_date_from_gmt( $ban['created_at'] ) ) . '</td><td>' . esc_html( get_date_from_gmt( $ban['expires_at'] ) ) . '</td><td>';
+            echo '<button type="submit" class="button-link-delete" name="fail2wp-ip-blocking-action" value="remove:' . esc_attr( $ban['ip'] ) . '" formaction="' . esc_url( $action ) . '" formmethod="post">' . esc_html__( 'Clear', 'fail2wp' ) . '</button></td></tr>';
+        }
+        echo '</tbody></table>';
+        echo '<p><button type="submit" class="button button-secondary" name="fail2wp-ip-blocking-action" value="clear" formaction="' . esc_url( $action ) . '" formmethod="post">' . esc_html__( 'Clear all IP blocks', 'fail2wp' ) . '</button></p></section>';
+    }
     protected function fail2wp_apply_cloudflare_form_state_from_post() {
         $this->fail2wp_cloudflare_check = isset( $_POST['fail2wp-cloudflare-check'] );
         if ( isset( $_POST['fail2wp-cloudflare-ipv4'] ) ) {
@@ -2876,6 +2973,173 @@ class Fail2WP {
         return( $remote_ip );
     }
 
+    /**
+     * Resolve the client address consistently before local ban checks or event
+     * accounting. Cloudflare takes precedence over the existing proxy header.
+     *
+     * @since 1.3.0
+     */
+    protected function fail2wp_get_client_ip() : string {
+        if ( empty( $_SERVER['REMOTE_ADDR'] ) ) {
+            return( '' );
+        }
+        $remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+        if ( ! filter_var( $remote_ip, FILTER_VALIDATE_IP ) ) {
+            return( '' );
+        }
+        $client_ip = $this->fail2wp_do_cloudflare_lookup( $remote_ip );
+        if ( $client_ip === $remote_ip && ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
+            $proxy_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
+            if ( filter_var( $proxy_ip, FILTER_VALIDATE_IP ) ) {
+                $client_ip = $proxy_ip;
+            }
+        }
+        return( filter_var( $client_ip, FILTER_VALIDATE_IP ) ? $client_ip : '' );
+    }
+
+    protected function fail2wp_ip_blocking_is_bypassed( string $ip ) : bool {
+        foreach ( $this->fail2wp_ip_blocking_bypass as $entry ) {
+            switch ( $this->fail2wp_get_ip_blocking_bypass_entry_type( $entry ) ) {
+                case VALIDATE_IPHOSTCIDR_IPV4:
+                case VALIDATE_IPHOSTCIDR_IPV6:
+                    if ( $ip === $entry ) {
+                        return( true );
+                    }
+                    break;
+                case VALIDATE_IPHOSTCIDR_IPV4_CIDR:
+                case VALIDATE_IPHOSTCIDR_IPV6_CIDR:
+                    if ( $this->fail2wp_cidrm->match( $ip, $entry ) ) {
+                        return( true );
+                    }
+                    break;
+                case VALIDATE_IPHOSTCIDR_HOSTNAME:
+                    $lookup = $this->fail2wp_hostname_lookup( $entry );
+                    if ( is_array( $lookup ) && in_array( $ip, $lookup, true ) ) {
+                        return( true );
+                    }
+                    break;
+                case VALIDATE_IPHOSTCIDR_HOSTNAME_WC:
+                    $hostnames = $this->fail2wp_reverse_hostname_lookup( $ip );
+                    if ( is_array( $hostnames ) ) {
+                        foreach ( $hostnames as $hostname ) {
+                            if ( $this->fail2wp_hostname_match_wildcard( $hostname, $entry ) ) {
+                                return( true );
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+        return( false );
+    }
+
+    protected function fail2wp_is_login_request() : bool {
+        return( ! empty( $_SERVER['SCRIPT_NAME'] ) && basename( sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) ) === 'wp-login.php' );
+    }
+
+    /**
+     * Match the configured login allow list before local-ban enforcement on
+     * wp-login.php. This keeps the existing exact, CIDR, hostname, and
+     * wildcard semantics authoritative in their intended context.
+     *
+     * @since 1.3.0
+     */
+    protected function fail2wp_login_ip_is_allowlisted( string $ip ) : bool {
+        if ( ! $this->fail2wp_loginip_enable || empty( $this->fail2wp_loginip_allow ) ) {
+            return( false );
+        }
+        foreach ( $this->fail2wp_precond_access_list( true ) as $entry ) {
+            switch ( $entry['type'] ) {
+                case VALIDATE_IPHOSTCIDR_IPV4:
+                case VALIDATE_IPHOSTCIDR_IPV6:
+                    if ( $entry['data'] === $ip ) {
+                        return( true );
+                    }
+                    break;
+                case VALIDATE_IPHOSTCIDR_IPV4_CIDR:
+                case VALIDATE_IPHOSTCIDR_IPV6_CIDR:
+                    if ( $this->fail2wp_cidrm->match( $ip, $entry['data'] ) ) {
+                        return( true );
+                    }
+                    break;
+                case VALIDATE_IPHOSTCIDR_HOSTNAME:
+                    if ( in_array( $ip, $this->fail2wp_hostname_lookup( $entry['data'] ), true ) ) {
+                        return( true );
+                    }
+                    break;
+                case VALIDATE_IPHOSTCIDR_HOSTNAME_WC:
+                    foreach ( $this->fail2wp_reverse_hostname_lookup( $ip ) as $hostname ) {
+                        if ( $this->fail2wp_hostname_match_wildcard( $hostname, $entry['data'] ) ) {
+                            return( true );
+                        }
+                    }
+                    break;
+            }
+        }
+        return( false );
+    }
+
+    /**
+     * Record a qualifying, already-loggable security event.
+     *
+     * @since 1.3.0
+     */
+    public function fail2wp_record_ip_blocking_event( string $ip = '' ) {
+        if ( ! $this->fail2wp_ip_blocking_enable ) {
+            return;
+        }
+        if ( empty( $ip ) ) {
+            $ip = $this->fail2wp_get_client_ip();
+        }
+        if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) || $this->fail2wp_ip_blocking_is_bypassed( $ip ) ) {
+            return;
+        }
+        $was_banned = Fail2WP_IP_Blocking_Storage::is_banned( $ip );
+        $is_banned = Fail2WP_IP_Blocking_Storage::record_event(
+            $ip,
+            max( 1, $this->fail2wp_ip_blocking_threshold ),
+            max( 60, $this->fail2wp_ip_blocking_window ),
+            max( 60, $this->fail2wp_ip_blocking_duration )
+        );
+        Fail2WP_IP_Blocking_Storage::prune( max( 60, $this->fail2wp_ip_blocking_window ) );
+        if ( $is_banned && ! $was_banned ) {
+            $message = $this->fail2wp_make_alert_message( $ip, null, FAIL2WP_ALERT_IP_BLOCK_CREATED, true );
+            if ( ! empty( $message ) ) {
+                $this->fail2wp_alert_send( $message );
+            }
+        }
+    }
+
+    /**
+     * Enforce local bans before WordPress routes public or admin requests.
+     *
+     * @since 1.3.0
+     */
+    public function fail2wp_ip_blocking_enforce() {
+        if ( ! $this->fail2wp_ip_blocking_enable || php_sapi_name() === 'cli' ) {
+            return;
+        }
+        $ip = $this->fail2wp_get_client_ip();
+        if ( empty( $ip ) || $this->fail2wp_ip_blocking_is_bypassed( $ip ) ) {
+            return;
+        }
+        if ( $this->fail2wp_is_login_request() && $this->fail2wp_login_ip_is_allowlisted( $ip ) ) {
+            return;
+        }
+        if ( ! Fail2WP_IP_Blocking_Storage::is_banned( $ip ) ) {
+            return;
+        }
+        $message = $this->fail2wp_make_alert_message( $ip, null, FAIL2WP_ALERT_IP_BLOCK_HIT, true );
+        if ( ! empty( $message ) ) {
+            $this->fail2wp_alert_send( $message );
+        }
+        status_header( 403 );
+        nocache_headers();
+        header( 'Content-Type: text/html; charset=utf-8' );
+        echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>' . esc_html__( 'Access temporarily blocked', 'fail2wp' ) . '</title><style>body{margin:0;background:#f6f7f7;color:#1d2327;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.fail2wp-block{max-width:38rem;margin:10vh auto;padding:2rem;background:#fff;border-top:4px solid #b32d2e;box-shadow:0 1px 3px rgba(0,0,0,.12)}h1{margin-top:0;font-size:1.5rem}</style></head><body><main class="fail2wp-block"><h1>' . esc_html__( 'Access temporarily blocked', 'fail2wp' ) . '</h1><p>' . esc_html__( 'This address has been temporarily blocked because of repeated security events. Please try again later.', 'fail2wp' ) . '</p></main></body></html>';
+        exit;
+    }
+
 
     /**
      * Build context based alert message.
@@ -2985,6 +3249,12 @@ class Fail2WP {
                 break;
             case FAIL2WP_ALERT_XMLRPC_BLOCKED:
                 $alert_message = 'XMLRPC access attempted' . $remote_ip . $our_port;
+                break;
+            case FAIL2WP_ALERT_IP_BLOCK_CREATED:
+                $alert_message = 'Local IP block created' . $remote_ip . $our_port;
+                break;
+            case FAIL2WP_ALERT_IP_BLOCK_HIT:
+                $alert_message = 'Blocked local IP request' . $remote_ip . $our_port;
                 break;
         } // switch
         if ( defined( 'FAIL2WP_FLOW_DEBUG') && FAIL2WP_FLOW_DEBUG ) {
@@ -3142,6 +3412,7 @@ class Fail2WP {
         $alert_message = $this->fail2wp_make_alert_message( $username, $error, FAIL2WP_ALERT_FAILURE );
         if ( ! empty( $alert_message ) ) {
             $this->fail2wp_alert_send( $alert_message );
+            $this->fail2wp_record_ip_blocking_event();
         }
     }
 
@@ -3654,6 +3925,7 @@ class Fail2WP {
                         $alert_message = $this->fail2wp_make_alert_message( '', null, FAIL2WP_ALERT_LOGINIP_BLOCKED, false, $remote_real_ip );
                         if ( ! empty( $alert_message ) ) {
                             $this->fail2wp_alert_send( $alert_message );
+                            $this->fail2wp_record_ip_blocking_event( $remote_real_ip );
                         }
                     }
                     wp_die( esc_html__('Logins are temporarily disabled', 'fail2wp'),
@@ -3836,6 +4108,90 @@ class Fail2WP {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );
         }
     }
+
+    /**
+     * Schedule hourly administrator-account reconciliation when enabled.
+     *
+     * WP-Cron is traffic-driven; production sites should trigger it from a
+     * server scheduler when timely monitoring is required.
+     *
+     * @since 1.3.0
+     */
+    protected function fail2wp_admin_monitor_schedule() {
+        if ( ! wp_next_scheduled( 'fail2wp_admin_monitor_reconcile' ) ) {
+            wp_schedule_event( time() + 300, 'hourly', 'fail2wp_admin_monitor_reconcile' );
+        }
+    }
+
+    /**
+     * Initialize monitoring after WordPress has loaded users and roles.
+     *
+     * @since 1.3.0
+     */
+    public function fail2wp_admin_monitor_initialize() {
+        if ( ! $this->fail2wp_admin_monitor_enable ) {
+            return;
+        }
+        $this->fail2wp_admin_monitor_schedule();
+        if ( empty( Fail2WP_Admin_User_Monitor::get_baseline() ) ) {
+            Fail2WP_Admin_User_Monitor::store_baseline();
+        }
+    }
+
+    /**
+     * Return a concise, English syslog summary of administrator differences.
+     *
+     * @since 1.3.0
+     */
+    protected function fail2wp_admin_monitor_format_changes( array $changes ) : string {
+        $parts = array();
+        if ( ! empty( $changes['added'] ) ) {
+            $parts[] = 'added administrator account(s): ' . implode( ',', array_values( $changes['added'] ) );
+        }
+        if ( ! empty( $changes['removed'] ) ) {
+            $parts[] = 'removed administrator account(s): ' . implode( ',', array_values( $changes['removed'] ) );
+        }
+        return( implode( '; ', $parts ) );
+    }
+
+    /**
+     * Reconcile the stored baseline with current administrator-role accounts.
+     *
+     * @since 1.3.0
+     */
+    public function fail2wp_admin_monitor_reconcile() {
+        if ( ! $this->fail2wp_admin_monitor_enable ) {
+            return;
+        }
+        $baseline = Fail2WP_Admin_User_Monitor::get_baseline();
+        if ( empty( $baseline ) ) {
+            Fail2WP_Admin_User_Monitor::store_baseline();
+            return;
+        }
+        $current = Fail2WP_Admin_User_Monitor::get_current_snapshot();
+        $changes = Fail2WP_Admin_User_Monitor::compare( $baseline, $current );
+        update_option( Fail2WP_Admin_User_Monitor::LAST_CHECK_OPTION, time(), false );
+        if ( ! Fail2WP_Admin_User_Monitor::has_changes( $changes ) ) {
+            delete_option( Fail2WP_Admin_User_Monitor::LAST_SIGNATURE_OPTION );
+            return;
+        }
+        $signature = hash( 'sha256', wp_json_encode( $changes ) );
+        if ( hash_equals( (string) get_option( Fail2WP_Admin_User_Monitor::LAST_SIGNATURE_OPTION, '' ), $signature ) ) {
+            return;
+        }
+        update_option( Fail2WP_Admin_User_Monitor::LAST_SIGNATURE_OPTION, $signature, false );
+        $message = 'Administrator account baseline changed: ' . $this->fail2wp_admin_monitor_format_changes( $changes );
+        $this->fail2wp_alert_send( $message );
+    }
+
+    /**
+     * Reconcile immediately after a WordPress user or role change hook.
+     *
+     * @since 1.3.0
+     */
+    public function fail2wp_admin_monitor_event( $user_id = 0 ) {
+        $this->fail2wp_admin_monitor_reconcile();
+    }
     /**
      * Add hooks we're watching when WordPress is fully loaded.
      *
@@ -3895,6 +4251,7 @@ class Fail2WP {
                 $alert_message = $this->fail2wp_make_alert_message( '', '', FAIL2WP_ALERT_USER_ENUM );
                 if ( ! empty( $alert_message ) ) {
                     $this->fail2wp_alert_send( $alert_message );
+                    $this->fail2wp_record_ip_blocking_event();
                 }
             }
         }
@@ -4054,12 +4411,27 @@ class Fail2WP {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
         }
-        // Plugin activation, not needed for this plugin atm :-)
-        // register_activation_hook( __FILE__, [$this, 'fail2wp_activate_plugin'] );
+        Fail2WP_IP_Blocking_Storage::maybe_install();
 
         // Setup i18n. We use the 'init' action rather than 'plugins_loaded' as per
         // https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#user-contributed-notes
         add_action( 'init',  [$this, 'setup_locale'] );
+        add_action( 'init',  [$this, 'fail2wp_ip_blocking_enforce'], 0 );
+
+        if ( $this->fail2wp_admin_monitor_enable ) {
+            add_action( 'fail2wp_admin_monitor_reconcile', [$this, 'fail2wp_admin_monitor_reconcile'] );
+            add_action( 'user_register', [$this, 'fail2wp_admin_monitor_event'], 20, 1 );
+            add_action( 'set_user_role', [$this, 'fail2wp_admin_monitor_event'], 20, 3 );
+            add_action( 'add_user_role', [$this, 'fail2wp_admin_monitor_event'], 20, 2 );
+            add_action( 'remove_user_role', [$this, 'fail2wp_admin_monitor_event'], 20, 2 );
+            add_action( 'profile_update', [$this, 'fail2wp_admin_monitor_event'], 20, 2 );
+            add_action( 'deleted_user', [$this, 'fail2wp_admin_monitor_event'], 20, 3 );
+            if ( did_action( 'init' ) ) {
+                $this->fail2wp_admin_monitor_initialize();
+            } else {
+                add_action( 'init', [$this, 'fail2wp_admin_monitor_initialize'], 1 );
+            }
+        }
 
         // Admin setup
         if ( is_admin() ) {
@@ -4101,6 +4473,17 @@ function run_fail2wp() {
         error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );
     }
 }
+
+/**
+ * Install the IP-blocking storage schema when the plugin is activated.
+ *
+ * @since 1.3.0
+ */
+function fail2wp_activate_plugin() {
+    Fail2WP_IP_Blocking_Storage::maybe_install();
+}
+
+register_activation_hook( __FILE__, __NAMESPACE__ . '\\fail2wp_activate_plugin' );
 
 if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
     error_log( '=====' . basename( __FILE__ ) . ' ' . __FUNCTION__ . ': {start ' . time() . '}' );
