@@ -7,7 +7,7 @@
  * @subpackage fail2wp/includes
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
- * fail2wp_misc.inc.php
+ * trait-fail2wp-settings.php
  * Copyright (C) 2021-2026 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *
@@ -197,59 +197,59 @@ trait Fail2WP_Settings {
           add_settings_field( 'fail2wp-cloudflare-refresh', esc_html__( 'Refresh Cloudflare IPs', 'fail2wp' ), [$this, 'fail2wp_settings_cloudflare_refresh'], 'fail2wp_settings_cloudflare', 'fail2wp_settings_cloudflare', ['label_for' => 'fail2wp-cloudflare-refresh'] );
 
         register_setting( 'fail2wp-settings', 'fail2wp-site-label', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_site_label']] );
-        register_setting( 'fail2wp-settings', 'fail2wp-block-user-enum' );
-        register_setting( 'fail2wp-settings', 'fail2wp-block-username-login' );
-        register_setting( 'fail2wp-settings', 'fail2wp-secure-login-message' );
-        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-generator' );
-        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-feeds' );
-        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove' );
+        register_setting( 'fail2wp-settings', 'fail2wp-block-user-enum', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp-settings', 'fail2wp-block-username-login', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp-settings', 'fail2wp-secure-login-message', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-generator', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove-feeds', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp-settings', 'fail2wp-settings-remove', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
 
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-enable' );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-testmode' );
-        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-inform-fail2ban' );
+        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-enable', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-testmode', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-inform-fail2ban', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
         register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-dnscache', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_dnscache']] );
         register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-allow', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']]  );
         register_setting( 'fail2wp_settings_loginip', 'fail2wp-loginip-deny', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']]  );
 
-        register_setting( 'fail2wp_settings_ipblocking', 'fail2wp-ip-blocking-enable' );
+        register_setting( 'fail2wp_settings_ipblocking', 'fail2wp-ip-blocking-enable', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
         register_setting( 'fail2wp_settings_ipblocking', 'fail2wp-ip-blocking-threshold', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_ip_blocking_threshold']] );
         register_setting( 'fail2wp_settings_ipblocking', 'fail2wp-ip-blocking-window', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_ip_blocking_seconds']] );
         register_setting( 'fail2wp_settings_ipblocking', 'fail2wp-ip-blocking-duration', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_ip_blocking_seconds']] );
         register_setting( 'fail2wp_settings_ipblocking', 'fail2wp-ip-blocking-bypass', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_ip_blocking_bypass']] );
 
-        register_setting( 'fail2wp_settings_adminmonitor', 'fail2wp-admin-monitor-enable' );
+        register_setting( 'fail2wp_settings_adminmonitor', 'fail2wp-admin-monitor-enable', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
 
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable' );
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable-pingback' );
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable-everything' );
-        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-inform-fail2ban' );
+        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable-pingback', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-disable-everything', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_xmlrpc', 'fail2wp-xmlrpc-inform-fail2ban', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
 
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-warn' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-warn-role' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-force' );
-        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-force-role' );
+        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-warn', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-warn-role', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_role']] );
+        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-force', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-force-role', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_role']] );
         register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-username-length', ['type' => 'number', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_username_length']] );
         register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-username-ban', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
         register_setting( 'fail2wp_settings_newuser', 'fail2wp-reguser-useremail-require', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
 
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-roles-notify', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_roles']] );
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-roles-warn', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_roles']] );
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-unknown-warn' );
-        register_setting( 'fail2wp_settings_notify', 'fail2wp-log-user-enum' );
+        register_setting( 'fail2wp_settings_notify', 'fail2wp-roles-notify', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_roles']] );
+        register_setting( 'fail2wp_settings_notify', 'fail2wp-roles-warn', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_roles']] );
+        register_setting( 'fail2wp_settings_notify', 'fail2wp-unknown-warn', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_notify', 'fail2wp-log-user-enum', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
 
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-require-authenticated' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-log-blocked' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-index' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-all' );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-ns', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_block_ns']] );
-        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-routes', ['type' => 'array', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_block_routes']] );
+        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-require-authenticated', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-log-blocked', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-index', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-all', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
+        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-ns', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_block_ns']] );
+        register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-block-routes', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_block_routes']] );
         register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-ipv4-bypass', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
         register_setting( 'fail2wp_settings_restapi', 'fail2wp-rest-filter-ipv6-bypass', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
 
         register_setting( 'fail2wp_settings_advanced', 'fail2wp-prefix', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_advanced']] );
-        register_setting( 'fail2wp_settings_advanced', 'fail2wp-also-log-php' );
+        register_setting( 'fail2wp_settings_advanced', 'fail2wp-also-log-php', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
 
-        register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-check' );
+        register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-check', ['type' => 'boolean', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_boolean']] );
         register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-ipv4', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
         register_setting( 'fail2wp_settings_cloudflare', 'fail2wp-cloudflare-ipv6', ['type' => 'string', 'sanitize_callback' => [$this, 'fail2wp_setting_sanitize_textarea_setting']] );
     }

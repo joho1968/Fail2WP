@@ -11,7 +11,9 @@
  * Plugin Name:       Fail2WP
  * Plugin URI:        https://code.webbplatsen.net/wordpress/fail2wp/
  * Description:       Security plugin for WordPress with support for Fail2ban and Cloudflare
- * Version:           1.3.0
+ * Version:           1.4.0
+ * Requires at least: 6.2
+ * Requires PHP:      7.4
  * Author:            WebbPlatsen, Joaquim Homrighausen <joho@webbplatsen.se>
  * Author URI:        https://webbplatsen.se/
  * License:           GPL-2.0+
@@ -51,7 +53,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'FAIL2WP_WORDPRESS_PLUGIN',        true                    );
-define( 'FAIL2WP_VERSION',                 '1.3.0'                 );
+define( 'FAIL2WP_VERSION',                 '1.4.0'                 );
 define( 'FAIL2WP_REV',                     1                       );
 define( 'FAIL2WP_PLUGINNAME_HUMAN',        'Fail2WP'               );
 define( 'FAIL2WP_PLUGINNAME_SLUG',         'fail2wp'               );
@@ -105,24 +107,24 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/class-fail2wp-cidr-matcher.
 
 
 /**
- * "NULL" class for wp_xmlrpc_server_class filter
+ * Disabled XML-RPC request handler.
  *
  * @since 1.2.0
  */
 class Fail2WP_Disable_XMLRPC {
-    //No clones please.
+    // Log clone calls.
     final public function __clone() {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {fail2wp_disable_xmlrpc}' );
         }
     }
-    //We are not a serial
+    // Log unserialize calls.
     final public function __wakeup() {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {fail2wp_disable_xmlrpc}' );
         }
     }
-    //Start me up ...
+    // Initialize XML-RPC handler.
     public function __construct() {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {fail2wp_disable_xmlrpc}' );
@@ -136,24 +138,24 @@ class Fail2WP_Disable_XMLRPC {
         status_header( $error->code );
         // Mimic class-IXR-server output
         $charset = function_exists( 'get_option' ) ? get_option( 'blog_charset' ) : '';
-        if ( ! empty( $charset ) ) {
-            $xml_safe = '<?xml version="1.0" encoding="' . wp_kses_no_null( $charset ) . '"?>' . "\n";
-        } else {
-            $xml_safe = '<?xml version="1.0"?>' . "\n";
+        if ( ! is_string( $charset ) || ( $charset !== '' && ! preg_match( '/^[A-Za-z][A-Za-z0-9._-]*$/D', $charset ) ) ) {
+            $charset = 'UTF-8';
         }
-        $length = strlen( $xml_safe );
         header( 'Connection: close' );
         if ( $charset ) {
-            header( 'Content-Type: text/xml; charset=' . wp_kses_no_null( $charset ) );
+            header( 'Content-Type: text/xml; charset=' . $charset );
         } else {
             header( 'Content-Type: text/xml' );
         }
         header( 'Date: ' . gmdate( 'r' ) );
-        echo $xml_safe;
-        echo wp_kses_no_null( $error->getXml() );
+        if ( $charset !== '' ) {
+            echo '<?xml version="1.0" encoding="' . esc_attr( $charset ) . '"?>' . "\n";
+        } else {
+            echo '<?xml version="1.0"?>' . "\n";
+        }
+        echo $error->getXml(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core IXR fault; fixed code and message.
 
-        // Instantiate our Fail2WP class so that we can possibly inform
-        // fail2ban about the "failure" (if we should)
+        // Load XML-RPC logging settings.
 
         $plugin = Fail2WP::getInstance( true );
 
@@ -165,14 +167,11 @@ class Fail2WP_Disable_XMLRPC {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': $_SERVER[REMOTE_ADDR] is empty?' );
             $remote_ip = '';
         }
-        $remote_ip_cf = $plugin->fail2wp_do_cloudflare_lookup( $remote_ip );
+        $remote_ip_cf = $plugin->fail2wp_get_client_ip();
         if ( $remote_ip == $remote_ip_cf ) {
             // Addresses are the same, not Cloudflare
             $remote_ip_cf = '';
-            if ( isset( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-                // Proxy IP address information
-                $remote_real_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
-            }
+            $remote_real_ip = $remote_ip;
         }
         // Possibly log what we know
         $ip_message = '';
@@ -236,6 +235,7 @@ class Fail2WP {
 
     protected $fail2wp_wp_roles = null;
     protected $fail2wp_wp_roles_enus = null;
+    protected $fail2wp_settings_rejected_options = [];          // @since 1.4.0
     protected $fail2wp_settings_tab = '';
     protected $fail2wp_prefix;
     protected $fail2wp_roles_notify;
@@ -316,21 +316,21 @@ class Fail2WP {
         return( self::$instance );
     }
     /**
-     * No clones please.
+     * Log clone calls.
      *
      * @return void
      */
     final public function __clone() {
     }
     /**
-     * We are not a serial
+     * Log unserialize calls.
      *
      * @return void
      */
     final public function __wakeup() {
     }
     /**
-     * Start me up ...
+     * Initialize plugin settings.
      */
     public function __construct( bool $is_for_xmlrpc = false ) {
         if ( defined( 'FAIL2WP_FLOW_DEBUG') && FAIL2WP_FLOW_DEBUG ) {
@@ -340,9 +340,9 @@ class Fail2WP {
         $this->fail2wp_mail_headers = array( 'Auto-Submitted: auto-replied',
                                              'X-Auto-Response-Suppress: All',
                                              'Precedence: auto_reply' );
-        // We only need to query this once really
+        // Cache extension availability.
         $this->fail2wp_have_mbstring = extension_loaded( 'mbstring' );
-        // Things we may be interested in for the REST API
+        // Configurable WordPress REST routes.
         $this->fail2wp_rest_filter_route_list = array(
             'categories',
             'comments',
@@ -450,8 +450,7 @@ class Fail2WP {
             $this->fail2wp_reguser_useremail_require = array();
             update_option( 'fail2wp-reguser-useremail-require', wp_json_encode( $this->fail2wp_reguser_useremail_require ) );
         }
-        // Possibly add new user registration details validation if new user
-        // registrations are active and we have something to validate against.
+        // Validate enabled registration rules.
         if ( $is_for_xmlrpc == false && $users_can_register &&
                     ( ! empty( $this->fail2wp_reguser_username_ban )
                       || ! empty( $this->fail2wp_reguser_useremail_require )
@@ -723,7 +722,7 @@ class Fail2WP {
         }
     }
     /**
-     * Shut me down
+     * Persist updated hostname cache.
      */
     public function __destruct() {
         if ( defined( 'FAIL2WP_FLOW_DEBUG') && FAIL2WP_FLOW_DEBUG ) {
@@ -750,10 +749,7 @@ class Fail2WP {
         }
     }
     /**
-     * Simply return "fail2wp_xmlrpc_inform_fail2ban".
-     *
-     * fail2wp_xmlrpc_inform_fail2ban is protected, this is a public function
-     * to allow reading its value.
+     * Return the XML-RPC logging setting.
      *
      * @return bool
      * @since 1.2.0
@@ -785,22 +781,20 @@ class Fail2WP {
 
 
     /**
-     * Remove feeds.
-     *
-     * Return a 404 response when feeds are disabled.
+     * Return HTTP 404 for disabled feeds.
      *
      * @since 1.1.0
      */
     protected function fail2wp_die_feed_disabled() {
         wp_die(
-            __( 'This feed has been disabled, please visit', 'fail2wp' ) .
+            esc_html__( 'This feed has been disabled, please visit', 'fail2wp' ) .
             ' <a href="' . esc_url( home_url() ) . '">' .
             esc_html( home_url() ) .
             '</a>',
-            __( 'Feed disabled', 'fail2wp' ),
+            esc_html__( 'Feed disabled', 'fail2wp' ),
             array(
-                'link_url'  => home_url(),
-                'link_text' => home_url(),
+                'link_url'  => esc_url( home_url() ),
+                'link_text' => esc_html( home_url() ),
                 'code'      => 'feed_disabled',
                 'response'  => 404,
             )
@@ -815,9 +809,7 @@ class Fail2WP {
 
 
     /**
-     * Setup various REST handlers.
-     *
-     * We only do this on 'rest_api_init' so that we don't clutter chain.
+     * Register REST filtering hooks.
      *
      * @since 1.1.0
      */
@@ -858,9 +850,7 @@ class Fail2WP {
         }
     }
     /**
-     * Require authentication for REST API calls.
-     *
-     * This effectively bypasses all other "block" settings.
+     * Require REST authentication unless the client IP is bypassed.
      *
      * @since 1.1.0
      */
@@ -875,7 +865,7 @@ class Fail2WP {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': $_SERVER[REMOTE_ADDR] is empty?' );
             $remote_ip = '';
         }
-        $remote_ip_cf = $this->fail2wp_do_cloudflare_lookup( $remote_ip );
+        $remote_ip_cf = $this->fail2wp_get_client_ip();
         if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
             error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): ' .
                        'Remote address="' . $remote_ip_cf . '" ' . ( $remote_ip !== $remote_ip_cf ? '('  . $remote_ip . ') ' : '' ) .
@@ -905,13 +895,14 @@ class Fail2WP {
         return( $result );
     }
     /**
-     * Block REST API index.
-     *
-     * This simply makes the REST API index request return an empty body.
+     * Clear anonymous REST discovery unless the client IP is bypassed.
      *
      * @since 1.1.0
      */
     public function fail2wp_rest_index( $response ) {
+        if ( is_user_logged_in() || $this->fail2wp_rest_check_ip_bypass( '', $this->fail2wp_get_client_ip() ) ) {
+            return( $response );
+        }
         if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
             error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for index' );
         }
@@ -954,14 +945,12 @@ class Fail2WP {
         return( $allowed_to_bypass );
     }
     /**
-     * Check if route is part of the REST user endpoints.
-     *
-     * Covers both the collection route and individual user item routes.
+     * Match REST user collection and child routes.
      *
      * @since 1.2.5
      */
     protected function fail2wp_rest_is_users_route( string $wp_route ) : bool {
-        if ( $wp_route === 'users' ) {
+        if ( strcasecmp( $wp_route, 'users' ) === 0 ) {
             return( true );
         }
         if ( $this->fail2wp_have_mbstring ) {
@@ -991,8 +980,7 @@ class Fail2WP {
      * @since 1.1.0
      */
     public function fail2wp_rest_pre_dispatch( $result, \WP_REST_Server $rest_server, \WP_REST_Request $request ) {
-        // Authenticated users should be able to use wp-admin, the editor, and
-        // plugin workflows without being caught by broad REST blocking rules.
+        // Preserve authenticated REST workflows.
         if ( is_user_logged_in() ) {
             return( $result );
         }
@@ -1003,7 +991,7 @@ class Fail2WP {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': $_SERVER[REMOTE_ADDR] is empty?' );
             $remote_ip = '';
         }
-        $remote_ip_cf = $this->fail2wp_do_cloudflare_lookup( $remote_ip );
+        $remote_ip_cf = $this->fail2wp_get_client_ip();
         if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
             error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): ' .
                        'Remote address="' . $remote_ip_cf . '" ' . ( $remote_ip !== $remote_ip_cf ? '('  . $remote_ip . ') ' : '' ) .
@@ -1029,7 +1017,7 @@ class Fail2WP {
         }
         // Figure out what has been requested and where we live
         $namespaces = $this->fail2wp_get_rest_ns( $rest_server );
-        $route = $request->get_route();
+        $route = '/' . trim( $request->get_route(), '/' );
         $wp_route = '';
         $is_wp_route = false;
         if ( ! empty( $route ) ) {
@@ -1065,7 +1053,7 @@ class Fail2WP {
             }
         }
         // Figure out if we're blocking index requests and if this is one
-        if ( $this->fail2wp_rest_filter_block_index && in_array( $route, $namespaces ) ) {
+        if ( $this->fail2wp_rest_filter_block_index && in_array( strtolower( $route ), array_map( 'strtolower', $namespaces ), true ) ) {
             if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                 error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for index' );
             }
@@ -1081,7 +1069,14 @@ class Fail2WP {
         // Figure out if we're blocking this namespace. Request will be /...
         // Namespaces to block are stored without the leading slash.
         if ( ! empty( $this->fail2wp_rest_filter_block_ns ) ) {
-            if ( in_array( $route, $this->fail2wp_rest_filter_block_ns ) ) {
+            $namespace_block_match = false;
+            foreach ( $this->fail2wp_rest_filter_block_ns as $namespace ) {
+                if ( strcasecmp( $route, $namespace ) === 0 || stripos( $route, $namespace . '/' ) === 0 ) {
+                    $namespace_block_match = true;
+                    break;
+                }
+            }
+            if ( $namespace_block_match ) {
                 if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
                     error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): We are blocking REST API requests for NS "' . $route . '"' );
                 }
@@ -1098,9 +1093,12 @@ class Fail2WP {
         // Figure out if we're blocking this WP REST API route. Request will be
         // /... Routes to block are stored without the leading slash.
         if ( $is_wp_route && ! empty( $this->fail2wp_rest_filter_block_routes ) ) {
-            $route_block_match = in_array( $wp_route, $this->fail2wp_rest_filter_block_routes );
-            if ( ! $route_block_match && in_array( 'users', $this->fail2wp_rest_filter_block_routes ) ) {
-                $route_block_match = $this->fail2wp_rest_is_users_route( $wp_route );
+            $route_block_match = false;
+            foreach ( $this->fail2wp_rest_filter_block_routes as $blocked_route ) {
+                if ( strcasecmp( $wp_route, $blocked_route ) === 0 || stripos( $wp_route, $blocked_route . '/' ) === 0 ) {
+                    $route_block_match = true;
+                    break;
+                }
             }
             if ( $route_block_match ) {
                 if ( defined( 'FAIL2WP_REST_DEBUG' ) && FAIL2WP_REST_DEBUG ) {
@@ -1122,10 +1120,7 @@ class Fail2WP {
 
 
     /**
-     * Checks username and e-mail address prior to registration.
-     *
-     * Hooks 'registration_errors' and validates username and e-mail address
-     * according to our settings.
+     * Validate registration username and email settings.
      *
      * @since 1.1.0
      * @param \WP_Error $errors.
@@ -1209,10 +1204,7 @@ class Fail2WP {
 
 
     /*
-     * Display admin alert about setting default user role.
-     *
-     * This will display an admin alert if we have overridden WordPress'
-     * default new user role.
+     * Report a forced default registration role.
      *
      * @since 1.1.0
      */
@@ -1257,10 +1249,7 @@ class Fail2WP {
                  $this->fail2wp_mail_headers );
     }
     /**
-     * Display admin alert about default user role.
-     *
-     * This will display an admin alert if the default new user role does not
-     * match that configured in Fail2WP.
+     * Report a default registration role mismatch.
      *
      * @since 1.1.0
      */
@@ -1360,11 +1349,7 @@ class Fail2WP {
         echo '</div>';
     }
     /**
-     * Fetch filemtime() of file and return it.
-     *
-     * Fetch filemtime() of $filename and return it, upon error, plugin_version
-     * is returned instead. This could possibly simply return plugin_version in
-     * production.
+     * Return file modification time; fall back to the plugin version.
      *
      * @since  1.0.0
      * @param  string $filename The file for which we want filemtime()
@@ -1412,11 +1397,7 @@ class Fail2WP {
 
 
     /**
-     * Fetch WordPress roles.
-     *
-     * Fetch WordPress roles with WP names and human names, if possible. One could
-     * argue that we can just fetch a list of role names from WP, but we may miss
-     * roles with no names ... or not? :-)
+     * Return WordPress role identifiers and display names.
      *
      * @since 1.0.0
      * @return array List of roles and their human names
@@ -1499,43 +1480,43 @@ class Fail2WP {
         //
         $html = '';
         $tab_header ='<div class="wrap">';
-        $tab_header .= '<h1><span class="dashicons dashicons-shield" style="font-size:30px"></span>&nbsp;&nbsp;' . FAIL2WP_PLUGINNAME_HUMAN . '</h1>';
+        $tab_header .= '<h1><span class="dashicons dashicons-shield" style="font-size:30px"></span>&nbsp;&nbsp;' . esc_html( FAIL2WP_PLUGINNAME_HUMAN ) . '</h1>';
         $tab_header .= '<p>' . esc_html__( 'Provides authentication security functions for WordPress, plays nicely with Fail2ban and Cloudflare', 'fail2wp' ) . '</p>';
         $tab_header .= '<nav class="nav-tab-wrapper">';
-        $tab_header .= '<a href="' . $action . '" class="nav-tab' . ( empty( $this->fail2wp_settings_tab ) ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action ) . '" class="nav-tab' . ( empty( $this->fail2wp_settings_tab ) ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Basic configuration', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=loginip" class="nav-tab' . ( $this->fail2wp_settings_tab === 'loginip' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=loginip' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'loginip' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Login IP', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=ipblocking" class="nav-tab' . ( $this->fail2wp_settings_tab === 'ipblocking' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=ipblocking' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'ipblocking' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'IP blocking', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=newuser" class="nav-tab' . ( $this->fail2wp_settings_tab === 'newuser' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=newuser' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'newuser' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'New users', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=adminmonitor" class="nav-tab' . ( $this->fail2wp_settings_tab === 'adminmonitor' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=adminmonitor' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'adminmonitor' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Admin monitor', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=logging" class="nav-tab' . ( $this->fail2wp_settings_tab === 'logging' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=logging' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'logging' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'User logging', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=restapi" class="nav-tab' . ( $this->fail2wp_settings_tab === 'restapi' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=restapi' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'restapi' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'REST API', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=xmlrpc" class="nav-tab' . ( $this->fail2wp_settings_tab === 'xmlrpc' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=xmlrpc' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'xmlrpc' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'XMLRPC', 'fail2wp' ) .
                  '</a>';
-         $tab_header .= '<a href="' . $action . '&tab=advanced" class="nav-tab' . ( $this->fail2wp_settings_tab === 'advanced' ? ' nav-tab-active':'' ) . '">'.
+         $tab_header .= '<a href="' . esc_url( $action . '&tab=advanced' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'advanced' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Advanced', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=cloudflare" class="nav-tab' . ( $this->fail2wp_settings_tab === 'cloudflare' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=cloudflare' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'cloudflare' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Cloudflare', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=importexport" class="nav-tab' . ( $this->fail2wp_settings_tab === 'importexport' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=importexport' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'importexport' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'Import/Export', 'fail2wp' ) .
                  '</a>';
-        $tab_header .= '<a href="' . $action . '&tab=about" class="nav-tab' . ( $this->fail2wp_settings_tab === 'about' ? ' nav-tab-active':'' ) . '">'.
+        $tab_header .= '<a href="' . esc_url( $action . '&tab=about' ) . '" class="nav-tab' . ( $this->fail2wp_settings_tab === 'about' ? ' nav-tab-active':'' ) . '">'.
                  esc_html__( 'About', 'fail2wp' ) .
                  '</a>';
         $tab_header .= '</nav>';
@@ -1552,17 +1533,16 @@ class Fail2WP {
             ob_end_clean();
         } elseif ( $this->fail2wp_settings_tab == 'importexport' ) {
             $html .= '<form method="post" action="' . esc_url( $action ) . '&tab=importexport">';
-            $html .= wp_nonce_field( 'importexport', 'fail2wp_nonce' );
+            $html .= wp_nonce_field( 'importexport', 'fail2wp_nonce', true, false );
             $html .= '<div class="tab-content">';
             $html .= '<div class="fail2wp-config-header">';
             $do_import = false;
 
-            if ( isset( $_POST['fail2wpimport']) && isset( $_POST['fail2wp_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fail2wp_nonce'] ) ), 'importexport' ) ) {
-                if ( ! empty( $_POST['fail2wp-import-settings'] ) ) {
-                    // This construct is on purpose to be able to compare the filtered/unfiltered data
-                    $xs = trim( $_POST['fail2wp-import-settings'] );
-                    $_POST['fail2wp-import-settings'] = sanitize_text_field( $xs );
-                    if ( $xs != $_POST['fail2wp-import-settings'] ) {
+            if ( isset( $_POST['fail2wpimport'], $_POST['fail2wp_nonce'] ) && is_string( $_POST['fail2wp_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fail2wp_nonce'] ) ), 'importexport' ) ) {
+                if ( isset( $_POST['fail2wp-import-settings'] ) && is_string( $_POST['fail2wp-import-settings'] ) ) {
+                    // Preserve encoded data; validate the envelope and decoded payload below.
+                    $xs = trim( wp_unslash( $_POST['fail2wp-import-settings'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Strict envelope, base64, JSON, and setting validation follow.
+                    if ( $xs !== sanitize_text_field( $xs ) ) {
                         // Something was stripped
                         $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
                                        esc_html__( 'Some data was filtered, please make sure you paste the content exactly as copied', 'fail2wp' ).
@@ -1574,8 +1554,9 @@ class Fail2WP {
                                        '</strong></p></div>';
                     } else {
                         // Remove header/footer, convert, and decode before validating
-                        $xs = @ json_decode( base64_decode( substr( $xs, strlen( FAIL2WP_EXPORT_HEADER ), strlen( $xs ) - ( strlen( FAIL2WP_EXPORT_HEADER ) + strlen( FAIL2WP_EXPORT_FOOTER ) ) ) ), true, 10 );
-                        if ( ! is_array( $xs ) || empty( $xs['fail2wp_plugin_version'] ) ) {
+                        $payload = base64_decode( substr( $xs, strlen( FAIL2WP_EXPORT_HEADER ), strlen( $xs ) - ( strlen( FAIL2WP_EXPORT_HEADER ) + strlen( FAIL2WP_EXPORT_FOOTER ) ) ), true );
+                        $xs = $payload === false ? null : json_decode( $payload, true, 10 );
+                        if ( ! is_array( $xs ) || empty( $xs['fail2wp_plugin_version'] ) || ! is_string( $xs['fail2wp_plugin_version'] ) ) {
                             // Decoding failed
                             $tab_header .= '<div class="notice notice-error is-dismissible"><p><strong>'.
                                            esc_html__( 'Please make sure you paste the content exactly as copied', 'fail2wp' ).
@@ -1590,11 +1571,11 @@ class Fail2WP {
                             $do_import = true;
                         }
                     }
+                } else {
+                    $tab_header .= $this->fail2wp_admin_notice( __( 'Please make sure you paste the content exactly as copied', 'fail2wp' ), 'error' );
                 }
                 if ( $do_import ) {
-                    // Variables are named fail2wp_this_and_that. Settings are named fail2wp-this-and-that.
-                    // So we check if the variable exists in our context, and if so, update the setting.
-                    // We do need to make exceptions for array settings, since we store them as json.
+                    // Map exported property names to registered option names.
                     $warn_about_site_label = false;
                     $import_result = '';
                     foreach( $xs as $k => $v ) {
@@ -1604,12 +1585,29 @@ class Fail2WP {
                             }
                             continue;
                         }
-                        if ( ! property_exists( $this, $k ) ) {
-                            $import_result .= '  ' . str_replace( '_', '-', $k ) . '<br/>';
+                        if ( $k === 'fail2wp_plugin_version' || $k === 'fail2wp_settings_dbversion' ) {
                             continue;
                         }
-                        // What we call our option in WP DB
+                        // Restrict imports to settings; escape rejected names.
                         $k_wp = str_replace( '_', '-', $k );
+                        $registered_settings = get_registered_settings();
+                        if ( ! property_exists( $this, str_replace( '-', '_', $k ) ) || ! isset( $registered_settings[$k_wp] ) ) {
+                            $import_result .= '  ' . esc_html( $k_wp ) . '<br/>';
+                            continue;
+                        }
+                        $array_settings = array( 'fail2wp_loginip_allow', 'fail2wp_loginip_deny', 'fail2wp_cloudflare_ipv4', 'fail2wp_cloudflare_ipv6', 'fail2wp_reguser_username_ban', 'fail2wp_reguser_useremail_require', 'fail2wp_rest_filter_ipv4_bypass', 'fail2wp_rest_filter_ipv6_bypass', 'fail2wp_ip_blocking_bypass', 'fail2wp_roles_notify', 'fail2wp_roles_warn', 'fail2wp_rest_filter_block_ns', 'fail2wp_rest_filter_block_routes' );
+                        if ( in_array( $k, $array_settings, true ) ) {
+                            if ( ! is_array( $v ) || count( array_filter( $v, 'is_string' ) ) !== count( $v ) ) {
+                                $import_result .= '  ' . esc_html( $k_wp ) . '<br/>';
+                                continue;
+                            }
+                        } elseif ( ! is_scalar( $v ) ) {
+                            $import_result .= '  ' . esc_html( $k_wp ) . '<br/>';
+                            continue;
+                        }
+                        // Stored option name.
+                        $k_wp = str_replace( '_', '-', $k );
+                        unset( $this->fail2wp_settings_rejected_options[$k_wp] );
                         // Handle exceptions
                         switch( $k ) {
                             case 'fail2wp_loginip_allow':
@@ -1621,9 +1619,7 @@ class Fail2WP {
                             case 'fail2wp_rest_filter_ipv4_bypass':
                             case 'fail2wp_rest_filter_ipv6_bypass':
                             case 'fail2wp_ip_blocking_bypass':
-                                // Some special treatment of these since WordPress
-                                // calls the registered sanitization functions for
-                                // update_option()
+                                // Pass list text through the registered sanitizer.
                                 update_option( $k_wp, implode( "\n", $v ) );
                                 break;
                             case 'fail2wp_roles_notify':
@@ -1634,7 +1630,7 @@ class Fail2WP {
                                 $v_json = @ wp_json_encode( $v );
                                 if ( ! $v_json ) {
                                     error_log( basename(__FILE__) . ' (' . __FUNCTION__ . '): Unable to encode import value for "' . $k . '"' );
-                                    $import_result .= '  ' . $k_wp . '<br/>';
+                                    $import_result .= '  ' . esc_html( $k_wp ) . '<br/>';
                                 } else {
                                     update_option( $k_wp, $v );
                                 }
@@ -1651,6 +1647,10 @@ class Fail2WP {
                                     }
                                 }
                                 break;
+                        }
+                        if ( isset( $this->fail2wp_settings_rejected_options[$k_wp] ) ) {
+                            $import_result .= '  ' . esc_html( $k_wp ) . '<br/>';
+                            $html .= $this->fail2wp_admin_notice( $this->fail2wp_settings_rejected_options[$k_wp], 'error' );
                         }
                     }// foreach
                     // Possibly show warning/notices from import
@@ -1711,6 +1711,7 @@ class Fail2WP {
                     'fail2wp_block_username_login'          => $this->fail2wp_block_username_login,
                     'fail2wp_secure_login_message'          => $this->fail2wp_secure_login_message,
                     'fail2wp_log_user_enum'                 => $this->fail2wp_log_user_enum,
+                    'fail2wp_cloudflare_check'              => $this->fail2wp_cloudflare_check,
                     'fail2wp_cloudflare_ipv4'               => $this->fail2wp_cloudflare_ipv4,
                     'fail2wp_cloudflare_ipv6'               => $this->fail2wp_cloudflare_ipv6,
                     'fail2wp_reguser_warn'                  => $this->fail2wp_reguser_warn,
@@ -1731,7 +1732,7 @@ class Fail2WP {
                     'fail2wp_loginip_enable'                => $this->fail2wp_loginip_enable,
                     'fail2wp_loginip_testmode'              => $this->fail2wp_loginip_testmode,
                     'fail2wp_loginip_inform_fail2ban'       => $this->fail2wp_loginip_inform_fail2ban,
-                    'fail2wp-loginip-dnscache'              => $this->fail2wp_loginip_dnscache,
+                    'fail2wp_loginip_dnscache'              => $this->fail2wp_loginip_dnscache,
                     'fail2wp_loginip_allow'                 => $this->fail2wp_loginip_allow,
                     'fail2wp_loginip_deny'                  => $this->fail2wp_loginip_deny,
                     'fail2wp_xmlrpc_disable'                => $this->fail2wp_xmlrpc_disable,
@@ -1834,7 +1835,7 @@ class Fail2WP {
         }
         $html .= '</div>'; // wrap
         //
-        echo $tab_header . $html;
+        echo $tab_header . $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Values escaped during assembly; includes core Settings API markup.
     }
 
 
@@ -1850,7 +1851,7 @@ class Fail2WP {
              '<p>'  . esc_html__( 'This plugin provides security functions and integration between WordPress and', 'fail2wp' ) . ' <a href="https://www.fail2ban.org" class="fail2wp-ext-link" target="_blank"> Fail2ban</a>.</p>'.
              '</div>';
         echo '<div class="fail2wp-config-section">'.
-             '<p>'  . '<img class="fail2wp-wps-logo" alt="" src="' . esc_html( plugin_dir_url( __FILE__ ) ) . 'img/webbplatsen_logo.png" />' .
+             '<p>'  . '<img class="fail2wp-wps-logo" alt="" src="' . esc_url( plugin_dir_url( __FILE__ ) . 'img/webbplatsen_logo.png' ) . '" />' .
                       esc_html__( 'Commercial support and customizations for this plugin is available from', 'fail2wp' ) .
                       ' <a class="fail2wp-ext-link" href="https://webbplatsen.se" target="_blank">WebbPlatsen i Sverige AB</a> '.
                       esc_html__('(Sweden). We speak Swedish and English', 'fail2wp' ) . ' :-)' .
@@ -1890,9 +1891,7 @@ class Fail2WP {
 
 
     /**
-     * Sanitize input.
-     *
-     * Basic cleaning/checking of user input. Not much to do really.
+     * Sanitize the site label.
      *
      * @since  1.0.0
      */
@@ -1905,22 +1904,99 @@ class Fail2WP {
         }
         return( substr( sanitize_text_field( $input ), 0, 200 ) );
     }
+    /**
+     * Reject invalid input; retain the stored or effective default value.
+     *
+     * @since 1.4.0
+     */
+    protected function fail2wp_setting_reject_input( string $message, bool $report_error = true ) {
+        $hook_prefix = 'sanitize_option_';
+        $hook = current_filter();
+        if ( strpos( $hook, $hook_prefix ) !== 0 ) {
+            return( null );
+        }
+        $option = substr( $hook, strlen( $hook_prefix ) );
+        $property = str_replace( '-', '_', $option );
+        if ( ! property_exists( $this, $property ) ) {
+            return( null );
+        }
+        if ( $report_error ) {
+            $this->fail2wp_settings_rejected_options[$option] = $message;
+            $error_code = $option . '_invalid_value';
+            $reported = false;
+            foreach ( get_settings_errors( $option ) as $error ) {
+                if ( $error['code'] === $error_code ) {
+                    $reported = true;
+                    break;
+                }
+            }
+            if ( ! $reported ) {
+                add_settings_error( $option, $error_code, $message, 'error' );
+            }
+        }
+        $fallback = $this->{$property};
+        if ( is_array( $fallback ) ) {
+            $fallback = wp_json_encode( $fallback );
+        }
+        return( get_option( $option, $fallback ) );
+    }
+
+    /**
+     * Normalize checkbox values to 0 or 1.
+     *
+     * @since 1.4.0
+     */
+    public function fail2wp_setting_sanitize_boolean( $input ) : int {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return( (int)(bool) $this->fail2wp_setting_reject_input( '', false ) );
+        }
+        if ( in_array( $input, [ true, 1, '1' ], true ) ) {
+            return( 1 );
+        }
+        if ( in_array( $input, [ false, 0, '0', '', null ], true ) ) {
+            return( 0 );
+        }
+        return( (int)(bool) $this->fail2wp_setting_reject_input( __( 'Invalid on/off value. Previous setting retained.', 'fail2wp' ) ) );
+    }
+
+    /**
+     * Accept registered role identifiers; reject invalid selections.
+     *
+     * @since 1.4.0
+     */
+    public function fail2wp_setting_sanitize_role( $input ) : string {
+        if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'administrator' ) ) {
+            return( (string) $this->fail2wp_setting_reject_input( '', false ) );
+        }
+        if ( is_string( $input ) && array_key_exists( $input, $this->fail2wp_get_wp_roles() ) ) {
+            return( $input );
+        }
+        return( (string) $this->fail2wp_setting_reject_input( __( 'Invalid role selection. Previous setting retained.', 'fail2wp' ) ) );
+    }
+
     public function fail2wp_setting_sanitize_roles( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
-            return( '' );
+            return( (string) $this->fail2wp_setting_reject_input( '', false ) );
+        }
+        if ( $input === null || $input === '' ) {
+            $input = [];
+        } elseif ( is_string( $input ) ) {
+            $input = json_decode( $input, true, 2 );
         }
         $available_roles = $this->fail2wp_get_wp_roles();
-        $return_val = array();
-        if ( is_array( $input ) ) {
-            $roles_array = array_keys( $available_roles );
-            foreach( $input as $role ) {
-                if ( in_array( $role, $roles_array ) ) {
-                    // We know $role is clean since it matches
-                    $return_val[] = $role;
+        $valid = is_array( $input );
+        if ( $valid ) {
+            foreach ( $input as $role ) {
+                if ( ! is_string( $role ) || ! array_key_exists( $role, $available_roles ) ) {
+                    $valid = false;
+                    break;
                 }
             }
         }
-        return( wp_json_encode( $return_val ) );
+        if ( ! $valid ) {
+            return( (string) $this->fail2wp_setting_reject_input( __( 'Invalid role selection. Previous setting retained.', 'fail2wp' ) ) );
+        }
+        return( wp_json_encode( array_values( array_unique( $input ) ) ) );
     }
     public function fail2wp_setting_sanitize_block_ns( $input ) : string {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
@@ -1928,10 +2004,13 @@ class Fail2WP {
         }
         $namespaces = $this->fail2wp_get_rest_ns();
         $return_val = array();
+        if ( is_string( $input ) ) {
+            $input = json_decode( $input, true, 2 );
+        }
         if ( is_array( $input ) ) {
             foreach( $input as $block_ns ) {
                 if ( in_array( $block_ns, $namespaces ) ) {
-                    // We know $bock_ns is clean since it matches
+                    // Registered namespace match.
                     $return_val[] = $block_ns;
                 }
             }
@@ -1943,10 +2022,13 @@ class Fail2WP {
             return( '' );
         }
         $return_val = array();
+        if ( is_string( $input ) ) {
+            $input = json_decode( $input, true, 2 );
+        }
         if ( is_array( $input ) ) {
             foreach( $input as $block_route ) {
                 if ( in_array( $block_route, $this->fail2wp_rest_filter_route_list ) ) {
-                    // We know $block_route is clean since it matches
+                    // Registered route match.
                     $return_val[] = $block_route;
                 }
             }
@@ -2022,7 +2104,7 @@ class Fail2WP {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
             return( '' );
         }
-        // We really should strip everything but numbers here, but ...
+        // Apply numeric bounds.
         $input = (int) sanitize_text_field( $input );
         if ( $input < 0 ) {
             $input = 0;
@@ -2035,7 +2117,7 @@ class Fail2WP {
         if ( ! is_admin( ) || ! is_user_logged_in() || ! current_user_can( 'administrator' ) )  {
             return( 10080 );
         }
-        // We really should strip everything but numbers here, but ...
+        // Apply numeric bounds.
         $input = (int) sanitize_text_field( $input );
         if ( $input < 0 ) {
             $input = 0;
@@ -2122,7 +2204,11 @@ class Fail2WP {
                 add_settings_error(
                     'fail2wp-ip-blocking-bypass',
                     'fail2wp_ip_blocking_bypass_invalid',
-                    sprintf( __( 'The following bypass entries were not saved because they are invalid: %s', 'fail2wp' ), implode( ', ', $invalid_entries ) ),
+                    sprintf(
+                        /* translators: %s: Invalid bypass entries, separated by commas. */
+                        __( 'The following bypass entries were not saved because they are invalid: %s', 'fail2wp' ),
+                        implode( ', ', $invalid_entries )
+                    ),
                     'error'
                 );
                 $reported_invalid_entries[$error_key] = true;
@@ -2150,7 +2236,7 @@ class Fail2WP {
             echo '<div class="fail2wp-role-option">';
             echo '<label for="fail2wp-roles-notify[]">';
             echo '<input type="checkbox" name="fail2wp-roles-notify[]" id="fail2wp-roles-notify[]" value="' . esc_attr( $k ) . '" ' . ( in_array( $k, $this->fail2wp_roles_notify ) ? 'checked="checked" ':'' ) . '/>';
-            echo esc_html__( $v, 'default' ) . '</label> ';
+            echo esc_html( $v ) . '</label> ';
             echo '</div>';
         }
     }
@@ -2160,7 +2246,7 @@ class Fail2WP {
             echo '<div class="fail2wp-role-option">';
             echo '<label for="fail2wp-roles-warn[]">';
             echo '<input type="checkbox" name="fail2wp-roles-warn[]" id="fail2wp-roles-warn[]" value="' . esc_attr( $k ) . '" ' . ( in_array( $k, $this->fail2wp_roles_warn ) ? 'checked="checked" ':'' ) . '/>';
-            echo esc_html__( $v, 'default' ) . '</label> ';
+            echo esc_html( $v ) . '</label> ';
             echo '</div>';
         }
     }
@@ -2312,7 +2398,7 @@ class Fail2WP {
             echo '<p>' . esc_html__( 'The current administrator accounts match the stored baseline.', 'fail2wp' ) . '</p>';
         }
         echo '<p><code>' . esc_html( implode( ', ', array_values( $current ) ) ) . '</code></p>';
-        echo wp_nonce_field( 'fail2wp_admin_monitor_actions', 'fail2wp_admin_monitor_nonce', true, false );
+        wp_nonce_field( 'fail2wp_admin_monitor_actions', 'fail2wp_admin_monitor_nonce' );
         echo '<button type="submit" class="button button-secondary" name="fail2wp-admin-monitor-action" value="baseline" formaction="' . esc_url( $action ) . '" formmethod="post">' . esc_html__( 'Review and update baseline', 'fail2wp' ) . '</button>';
         echo '<p class="description">' . esc_html__( 'Use this only after intentionally creating, removing, or changing administrator accounts.', 'fail2wp' ) . '</p>';
     }
@@ -2384,7 +2470,7 @@ class Fail2WP {
                 if ( $k == $option_val ) {
                     echo ' selected="selected"';
                 }
-                echo ' />' . esc_html__( $v, 'default' ) . '</option>';
+                echo ' />' . esc_html( $v ) . '</option>';
             }
             echo '</select>';
             echo '<p class="description">' .
@@ -2414,7 +2500,7 @@ class Fail2WP {
                 if ( $k == $option_val ) {
                     echo ' selected="selected"';
                 }
-                echo ' />' . esc_html__( $v, 'default' ) . '</option>';
+                echo ' />' . esc_html( $v ) . '</option>';
             }
             echo '</select>';
             echo '<p class="description">' .
@@ -2647,7 +2733,7 @@ class Fail2WP {
         $action = admin_url( 'admin.php?page=' . FAIL2WP_PLUGINNAME_SLUG . '&tab=cloudflare' );
         $cloudflare_refresh_class = 'fail2wp-cloudflare-field' . ( $this->fail2wp_cloudflare_check ? '' : ' fail2wp-soft-disabled' );
         echo '<div class="' . esc_attr( $cloudflare_refresh_class ) . '">';
-        echo wp_nonce_field( 'fail2wp_cloudflare_refresh', 'fail2wp_cloudflare_refresh_nonce', true, false );
+        wp_nonce_field( 'fail2wp_cloudflare_refresh', 'fail2wp_cloudflare_refresh_nonce' );
         submit_button(
             esc_html__( 'Fetch current Cloudflare IPs', 'fail2wp' ),
             'secondary',
@@ -2770,14 +2856,19 @@ class Fail2WP {
         }
         if ( sanitize_text_field( wp_unslash( $_POST['fail2wp-admin-monitor-action'] ) ) === 'baseline' ) {
             $baseline = Fail2WP_Admin_User_Monitor::store_baseline();
-            return( $this->fail2wp_admin_notice( sprintf( __( 'Administrator baseline updated with %d account(s).', 'fail2wp' ), count( $baseline ) ), 'success' ) );
+            $message = sprintf(
+                /* translators: %d: Number of administrator accounts. */
+                __( 'Administrator baseline updated with %d account(s).', 'fail2wp' ),
+                count( $baseline )
+            );
+            return( $this->fail2wp_admin_notice( $message, 'success' ) );
         }
         return( $this->fail2wp_admin_notice( __( 'Unable to update the administrator baseline.', 'fail2wp' ), 'error' ) );
     }
     protected function fail2wp_ip_blocking_active_bans() {
         $bans = Fail2WP_IP_Blocking_Storage::get_active_bans();
         $action = admin_url( 'admin.php?page=' . FAIL2WP_PLUGINNAME_SLUG . '&tab=ipblocking' );
-        echo wp_nonce_field( 'fail2wp_ip_blocking_actions', 'fail2wp_ip_blocking_nonce', true, false );
+        wp_nonce_field( 'fail2wp_ip_blocking_actions', 'fail2wp_ip_blocking_nonce' );
         echo '<section class="fail2wp-config-section fail2wp-manual-ban" aria-labelledby="fail2wp-manual-ban-heading">';
         echo '<h2 id="fail2wp-manual-ban-heading">' . esc_html__( 'Block an IP address manually', 'fail2wp' ) . '</h2>';
         echo '<table class="form-table" role="presentation"><tbody>';
@@ -2861,6 +2952,7 @@ class Fail2WP {
      * @param  string $alert_message The error message.
      */
     public function fail2wp_alert_send( string $alert_message ) {
+        $alert_message = preg_replace( '/[\x00-\x1f\x7f]/', ' ', $alert_message );
         // Logging prefix (i.e. "this is us")
         $prefix = $this->fail2wp_prefix;
         if ( empty( $prefix ) ) {
@@ -2875,6 +2967,7 @@ class Fail2WP {
         } else {
             $prefix .= '(' . $this->fail2wp_site_label . ')';
         }
+        $prefix = preg_replace( '/[\x00-\x1f\x7f]/', ' ', $prefix );
         // Go through syslog mechanism
         if ( defined( 'LOG_AUTHPRIV' ) ) {
             $log_facility = LOG_AUTHPRIV;
@@ -2910,9 +3003,7 @@ class Fail2WP {
 
 
     /**
-     * Get string for message containing user information.
-     *
-     * Formats the contents of WP_User $user object into a suitable string.
+     * Format user display and login names for notifications.
      *
      * @since 1.1.0
      * @param object $user WP_User
@@ -2936,11 +3027,7 @@ class Fail2WP {
 
 
     /**
-     * Possibly process Cloudflare address.
-     *
-     * If the passed IP address matches one of the configured Cloudflare addresses,
-     * the function attempts to fetch the actual IP address from Cloudflare
-     * headers.
+     * Read a valid Cloudflare client IP from a configured Cloudflare peer.
      *
      * @since 1.0.0
      * @param string $remote_ip Remote IP address
@@ -2966,20 +3053,19 @@ class Fail2WP {
                     }
                 }
             }
-            if ( $is_cloudflare && ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-                $remote_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) );
+            if ( $is_cloudflare && ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) && is_string( $_SERVER['HTTP_CF_CONNECTING_IP'] ) && filter_var( $_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP ) ) {
+                $remote_ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
             }
         }
         return( $remote_ip );
     }
 
     /**
-     * Resolve the client address consistently before local ban checks or event
-     * accounting. Cloudflare takes precedence over the existing proxy header.
+     * Resolve client IP; prefer Cloudflare, then explicitly trusted X-Real-IP.
      *
      * @since 1.3.0
      */
-    protected function fail2wp_get_client_ip() : string {
+    public function fail2wp_get_client_ip() : string {
         if ( empty( $_SERVER['REMOTE_ADDR'] ) ) {
             return( '' );
         }
@@ -2988,10 +3074,14 @@ class Fail2WP {
             return( '' );
         }
         $client_ip = $this->fail2wp_do_cloudflare_lookup( $remote_ip );
-        if ( $client_ip === $remote_ip && ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-            $proxy_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
-            if ( filter_var( $proxy_ip, FILTER_VALIDATE_IP ) ) {
-                $client_ip = $proxy_ip;
+        if ( $client_ip === $remote_ip && defined( 'FAIL2WP_TRUSTED_PROXIES' ) && is_array( FAIL2WP_TRUSTED_PROXIES ) ) {
+            foreach ( FAIL2WP_TRUSTED_PROXIES as $proxy ) {
+                if ( is_string( $proxy ) && $this->fail2wp_cidrm->match( $remote_ip, $proxy ) ) {
+                    if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) && is_string( $_SERVER['HTTP_X_REAL_IP'] ) && filter_var( $_SERVER['HTTP_X_REAL_IP'], FILTER_VALIDATE_IP ) ) {
+                        $client_ip = $_SERVER['HTTP_X_REAL_IP'];
+                    }
+                    break;
+                }
             }
         }
         return( filter_var( $client_ip, FILTER_VALIDATE_IP ) ? $client_ip : '' );
@@ -3038,9 +3128,7 @@ class Fail2WP {
     }
 
     /**
-     * Match the configured login allow list before local-ban enforcement on
-     * wp-login.php. This keeps the existing exact, CIDR, hostname, and
-     * wildcard semantics authoritative in their intended context.
+     * Match the login allow list before local-ban enforcement.
      *
      * @since 1.3.0
      */
@@ -3152,6 +3240,8 @@ class Fail2WP {
      * @return mixed String with alert message or false on error.
      */
     public function fail2wp_make_alert_message( string $username, $context, int $alert_type, bool $username_is_ip_address = false, string $override_ip = '' ) {
+        // Keep untrusted login names within a single log record.
+        $username = preg_replace( '/[\x00-\x1f\x7f]/', ' ', $username );
         if ( defined( 'FAIL2WP_FLOW_DEBUG') && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
         }
@@ -3162,17 +3252,13 @@ class Fail2WP {
                 $remote_ip = $username;
             } elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
                 // Fetch remote IP if set
-                $remote_addr = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-                $remote_ip = $this->fail2wp_do_cloudflare_lookup( $remote_addr );
-                if ( $remote_ip == $remote_addr ) {
-                    // Not a Cloudflare address, check for proxy address (X-Real-IP)
-                    if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-                        $remote_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
-                    }
-                }
+                $remote_ip = $this->fail2wp_get_client_ip();
             }
         } else {
             $remote_ip = $override_ip;
+        }
+        if ( ! filter_var( $remote_ip, FILTER_VALIDATE_IP ) ) {
+            $remote_ip = '';
         }
         if ( ! empty( $remote_ip ) ) {
             $remote_ip = ' from' . ' ' . $remote_ip;
@@ -3265,20 +3351,15 @@ class Fail2WP {
 
 
     /**
-     * See if a user's roles/caps have been configured for notifications.
-     *
-     * Compares all configured notification roles/caps with that of the roles/
-     * caps of a user. If found, returns true, otherwise false.
+     * Check configured notification roles against user capabilities.
      *
      * @since 1.0.0
      * @param array $roles WordPress roles/caps of user in question.
-     * @param string $notify_rules JSON string with configured roles.
+     * @param array $notify_roles Configured roles.
      * @return boolean true=Notify, false=Don't notify
      */
     protected function fail2wp_role_is_active( array $roles, array $notify_roles ) : bool {
-        // Lookup our selected notification roles. We could walk the other way
-        // too, but we're likely to have less configured roles/caps than what
-        // is available. So maybe this will save an iteration or two :-)
+        // Match configured notification roles.
         foreach( $notify_roles as $role ) {
             if ( array_key_exists( $role, $roles ) && $roles[$role] ) {
                 return( true );
@@ -3289,14 +3370,11 @@ class Fail2WP {
 
 
     /**
-     * Create human readable role names from two lists.
-     *
-     * Extracts the human readable role names from a merged version of roles we
-     * know about and roles present for a user.
+     * Return translated names for matching notification roles.
      *
      * @since 1.1.0
      * @param array $roles WordPress roles/caps of user in question.
-     * @param string $notify_rules JSON string with configured roles.
+     * @param string $notify_roles Configured roles as JSON.
      * @return string List of translated role names like ' [Administratör,Prenumerant]'
      */
     protected function fail2wp_roles_merge( array $roles, string $notify_roles ) : string {
@@ -3305,9 +3383,7 @@ class Fail2WP {
             return( false );
         }
         $new_roles = array();
-        // Lookup our selected notification roles. We could walk the other way
-        // too, but we're likely to have less configured roles/caps than what
-        // is available. So maybe this will save an iteration or two :-)
+        // Match configured notification roles.
         foreach( $notify_array as $role ) {
             if ( array_key_exists( $role, $roles ) && $roles[$role] ) {
                 $new_roles[] = $role;
@@ -3346,10 +3422,7 @@ class Fail2WP {
 
 
     /**
-     * Send alert when user with configured role(s) login.
-     *
-     * Send notification ("success") when a user with a role matching the
-     * configured notification roles logs in.
+     * Log successful logins for configured roles.
      *
      * @since 1.0.0
      * @param string $username The username as entered when logging in.
@@ -3399,7 +3472,7 @@ class Fail2WP {
             // We're configured to not notify about unknown users
             return;
         } elseif ( $error_code == 'incorrect_password' ) {
-            // We can get user info for this, so let's see if we should notify
+            // Check notification roles for known users.
             $failed_user = new \WP_User( 0, $username );
             $role_caps = $failed_user->get_role_caps();
             if ( is_array( $role_caps ) ) {
@@ -3477,9 +3550,7 @@ class Fail2WP {
 
 
     /**
-     * Possibly replace username/e-mail label for login screen.
-     *
-     * Activated by fail2wp_login_text().
+     * Replace the login username label when email login is required.
      *
      * @since 1.0.0
      */
@@ -3501,10 +3572,7 @@ class Fail2WP {
 
 
     /**
-     * Activate some gettext filtering on login page.
-     *
-     * This is done via a login_head action so that we don't process every single
-     * gettext() call.
+     * Enable login-label translation on login_head.
      *
      * @since 1.0.0
      *
@@ -3523,81 +3591,56 @@ class Fail2WP {
 
 
     /**
-     * Lookup IP address, return hostname(s).
-     *
-     * Lookup IP address, either from cache (if enabled and found), or directly.
-     * This function assumes that the passed string is actually an IP address
-     * andwill not do any further parameter validation.
+     * Return forward-confirmed reverse DNS names; reuse cached lookups.
      *
      * @since 1.2.0
      * @param string $ip_address
-     * @return mixed Hostname(s) or empty if not found
+     * @return array Forward-confirmed hostnames.
      */
     protected function fail2wp_reverse_hostname_lookup( string $ip_address ) {
-        if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
-            error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
+        if ( ! filter_var( $ip_address, FILTER_VALIDATE_IP ) ) {
+            return( array() );
         }
-        $lookup_result = false;
-        if ( $this->fail2wp_loginip_dnscache > 0 && $this->fail2wp_loginip_dnscache < 10080 ) {
-            if ( defined( 'FAIL2WP_CACHE_DEBUG' ) && FAIL2WP_CACHE_DEBUG ) {
-                error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Cache lookup for "' . $ip_address . '"' );
-            }
-            if ( ! empty( $this->fail2wp_hostname_cache[$ip_address] ) ) {
-                if ( defined( 'FAIL2WP_CACHE_DEBUG' ) && FAIL2WP_CACHE_DEBUG ) {
-                    error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Cache lookup match' );
+        $use_cache = $this->fail2wp_loginip_dnscache > 0 && $this->fail2wp_loginip_dnscache <= 10080;
+        if ( $use_cache && ! empty( $this->fail2wp_hostname_cache[$ip_address] ) ) {
+            $hostnames = $this->fail2wp_hostname_cache[$ip_address];
+        } else {
+            $hostname = gethostbyaddr( $ip_address );
+            $hostnames = ! empty( $hostname ) && ! filter_var( $hostname, FILTER_VALIDATE_IP ) ? array( $hostname ) : array();
+        }
+        $confirmed = array();
+        foreach ( $hostnames as $hostname ) {
+            // Forward-confirm PTR names, including cached entries.
+            foreach ( $this->fail2wp_hostname_lookup( $hostname ) as $address ) {
+                if ( inet_pton( $address ) === inet_pton( $ip_address ) ) {
+                    $confirmed[] = $hostname;
+                    break;
                 }
-                if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
-                    error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );
-                }
-                return( $this->fail2wp_hostname_cache[$ip_address] );
-            }
-            if ( defined( 'FAIL2WP_CACHE_DEBUG' ) && FAIL2WP_CACHE_DEBUG ) {
-                error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Cache lookup no match' );
             }
         }
-        // No match, perform DNS lookup
-        $dns = gethostbyaddr( $ip_address );
-        if ( ! empty( $dns ) ) {
-            $addr_list = array( 0 => $dns );
+        if ( $use_cache ) {
             if ( empty( $this->fail2wp_hostname_cache['ts'] ) ) {
                 $this->fail2wp_hostname_cache['ts'] = time() + ( $this->fail2wp_loginip_dnscache * 60 );
-                if ( defined( 'FAIL2WP_CACHE_DEBUG' ) && FAIL2WP_CACHE_DEBUG ) {
-                    error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Cache timer set to ' . $this->fail2wp_hostname_cache['ts'] );
-                }
             }
+            $this->fail2wp_hostname_cache[$ip_address] = $confirmed;
             $this->fail2wp_hostname_cache_updated = true;
-            $this->fail2wp_hostname_cache[$ip_address] = $addr_list;
-            $lookup_result = $addr_list;
-            if ( defined( 'FAIL2WP_CACHE_DEBUG' ) && FAIL2WP_CACHE_DEBUG ) {
-                error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Cache entry added (' . implode( ',', $addr_list ) . ')' );
-            }
-        } else {
-            error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': DNS-lookup failed for "' . $ip_address . '"' );
         }
-        if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
-            error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );
-        }
+        return( $confirmed );
     }
 
 
     /**
-     * Lookup hostname, return IP address.
-     *
-     * Lookup hostname, either from cache (if enabled and found), or directly.
-     * This function assumes that the passed string is actually a hostname and
-     * will not do any further parameter validation.
-     *
-     * FALSE or array can be returned
+     * Return hostname A/AAAA addresses; empty array on lookup failure.
      *
      * @since 1.2.0
      * @param string $hostname
-     * @return mixed IP address or empty if not found
+     * @return array A/AAAA addresses.
      */
     protected function fail2wp_hostname_lookup( string $hostname ) {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {entry}' );
         }
-        $lookup_result = false;
+        $lookup_result = array();
         if ( $this->fail2wp_loginip_dnscache > 0 && $this->fail2wp_loginip_dnscache < 10080 ) {
             if ( defined( 'FAIL2WP_CACHE_DEBUG' ) && FAIL2WP_CACHE_DEBUG ) {
                 error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Cache lookup for "' . $hostname . '"' );
@@ -3656,9 +3699,7 @@ class Fail2WP {
 
 
     /**
-     * Determine if string contains wildcard characters.
-     *
-     * Checks string for * and ? characters, in which case TRUE is returned.
+     * Check for * or ? wildcard characters.
      *
      * @since 1.2.0
      * @param string $hostname Hostname string, possibly containing wildcards
@@ -3670,10 +3711,7 @@ class Fail2WP {
 
 
     /**
-     * Check if $match_str matches $hostname.
-     *
-     * This function should be used, when/if $match_str may contain the wildcard
-     * characters * and/or ?, to check for a match in a hostname.
+     * Match a hostname against a pattern containing * or ?.
      *
      * @since 1.2.0
      * @param string $hostname Hostname
@@ -3687,21 +3725,12 @@ class Fail2WP {
 
 
     /**
-     * Precondition access list.
-     *
-     * Step through an allow/deny list and classify each entry, and possibly
-     * resolving hostnames.
+     * Classify valid login allow/deny entries; skip invalid entries.
      *
      * @since 1.2.0
      * @param bool $is_allow If true, use allow list, otherwise use deny list
-     * @return array Array with address type, and (possibly) resolved hostname
+     * @return array Classified access-list entries.
      *
-     * TODO: This could potentially be improved so that it's done when the
-     * list(s) are saved, since the result of the parsing of the list(s) is
-     * static. OTOH, it's safe to assume that there'll be reasonably few
-     * entries on these lists, and there are many other things in a WordPress
-     * plugin and WordPress itself that could be optimized rather than saving
-     * a millisecond or two here.
      */
     protected function fail2wp_precond_access_list( bool $is_allow ) : array {
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
@@ -3728,7 +3757,7 @@ class Fail2WP {
                     $entry_type = VALIDATE_IPHOSTCIDR_IPV6 ;
                 } elseif ( filter_var( $entry, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME ) ) {
                     // Not IPv4 nor IPv6, check for hostname
-                    // PHP will allow a trailing dot (.), but we do not
+                    // Reject trailing dots.
                     if ( $entry[strlen( $entry ) - 1] == '.' ) {
                         $entry_type = VALIDATE_IPHOSTCIDR_INVALID;
                     } elseif ( strpos( $entry, '.' ) === false && $entry !== 'localhost' ) {
@@ -3748,7 +3777,7 @@ class Fail2WP {
                 // CIDR?
             } elseif ( filter_var( $split[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
                 // .. CIDR, check IP address part for IPv4
-                // .. CIDR, we only allow two digits in mask for IPv4
+                // IPv4 masks: at most two digits.
                 if ( ! preg_match( '/^\d{1,2}$/', $split[1] ) ) {
                     // Something else here, invalid
                     $entry_type = VALIDATE_IPHOSTCIDR_INVALID;
@@ -3759,7 +3788,7 @@ class Fail2WP {
                 }
             } elseif ( filter_var( $split[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
                 // .. CIDR, check IP address part for IPv6
-                // .. CIDR, we only allow three digits in mask for IPv6
+                // IPv6 masks: at most three digits.
                 if ( ! preg_match( '/^\d{1,3}$/', $split[1] ) ) {
                     // Something else here, invalid
                     $entry_type = VALIDATE_IPHOSTCIDR_INVALID;
@@ -3769,9 +3798,7 @@ class Fail2WP {
                     $entry_type = VALIDATE_IPHOSTCIDR_INVALID;
                 }
             }
-            // Final call. We could possibly use VALIDATE_IPHOSTCIDR_INVALID as
-            // the default value and skip some assignments above, but we'll
-            // leave that for another day.
+            // Skip invalid entries.
             if ( $entry_type == 9999 || $entry_type == VALIDATE_IPHOSTCIDR_INVALID ) {
                 // Invalid entry
                 error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': Unable to interpret "' . $entry . '", skipped' );
@@ -3788,9 +3815,7 @@ class Fail2WP {
 
 
     /**
-     * Check IP before login.
-     *
-     * Checks remote IP against allow/deny list and possibly terminates WordPress.
+     * Enforce login IP allow/deny lists before login processing.
      *
      * @since 1.2.0
      *
@@ -3812,14 +3837,11 @@ class Fail2WP {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': $_SERVER[REMOTE_ADDR] is empty?' );
             $remote_ip = '';
         }
-        $remote_ip_cf = $this->fail2wp_do_cloudflare_lookup( $remote_ip );
+        $remote_ip_cf = $this->fail2wp_get_client_ip();
         if ( $remote_ip == $remote_ip_cf ) {
             // Addresses are the same, not Cloudflare
             $remote_ip_cf = '';
-            if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-                // Proxy IP address information
-                $remote_real_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
-            }
+            $remote_real_ip = $remote_ip;
         }
         // Possibly log what we know
         if ( $this->fail2wp_loginip_testmode ) {
@@ -3920,7 +3942,7 @@ class Fail2WP {
                     if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
                         error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit, wpdie}' );
                     }
-                    // If testmode is *not* enabled, we possibly notify fail2ban and "die"
+                    // Enforce the block and log when configured.
                     if ($this->fail2wp_loginip_inform_fail2ban) {
                         $alert_message = $this->fail2wp_make_alert_message( '', null, FAIL2WP_ALERT_LOGINIP_BLOCKED, false, $remote_real_ip );
                         if ( ! empty( $alert_message ) ) {
@@ -4011,12 +4033,13 @@ class Fail2WP {
                 }// foreach
             }
             if ( $block_login ) {
-                // If testmode is *not* enabled, we possibly notify fail2ban and "die"
+                // Enforce the block and log when configured.
                 if ( ! $this->fail2wp_loginip_testmode ) {
                     if ($this->fail2wp_loginip_inform_fail2ban) {
                         $alert_message = $this->fail2wp_make_alert_message( '', null, FAIL2WP_ALERT_LOGINIP_BLOCKED, false, $remote_real_ip );
                         if ( ! empty( $alert_message ) ) {
                             $this->fail2wp_alert_send( $alert_message );
+                            $this->fail2wp_record_ip_blocking_event( $remote_real_ip );
                         }
                     }
                     wp_die( esc_html__('Logins are temporarily disabled', 'fail2wp'),
@@ -4067,10 +4090,10 @@ class Fail2WP {
         }
         // IP access checking @since 1.2.0
         if ( $this->fail2wp_loginip_enable ) {
-            add_action( 'login_head', [$this, 'fail2wp_login_ip_check'] );
+            add_action( 'login_init', [$this, 'fail2wp_login_ip_check'] );
         }
         // XMLRPC handling @since 1.2.0
-        // We only do this if we're actually in an XMLRPC request
+        // Apply XML-RPC rules only to XML-RPC requests.
         if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
             if ( $this->fail2wp_xmlrpc_disable_everything ) {
                 // Everything XMLRPC is disabled, replace request handler
@@ -4110,10 +4133,7 @@ class Fail2WP {
     }
 
     /**
-     * Schedule hourly administrator-account reconciliation when enabled.
-     *
-     * WP-Cron is traffic-driven; production sites should trigger it from a
-     * server scheduler when timely monitoring is required.
+     * Schedule hourly administrator reconciliation through traffic-driven WP-Cron.
      *
      * @since 1.3.0
      */
@@ -4193,9 +4213,7 @@ class Fail2WP {
         $this->fail2wp_admin_monitor_reconcile();
     }
     /**
-     * Add hooks we're watching when WordPress is fully loaded.
-     *
-     * Not needed at the moment
+     * Unused wp_loaded hook placeholder.
      *
      * @since 1.0.0
      */
@@ -4204,9 +4222,7 @@ class Fail2WP {
     }
     */
     /**
-     * Process things when everything else is ready and we know what the request is.
-     *
-     * Not needed at the moment
+     * Unused main-request hook placeholder.
      *
      * @since 1.0.0
      */
@@ -4215,9 +4231,7 @@ class Fail2WP {
     }
     */
     /**
-     * Pre-get posts hook.
-     *
-     * Not needed at the moment
+     * Unused pre_get_posts hook placeholder.
      *
      * @since 1.0.0
      */
@@ -4228,7 +4242,7 @@ class Fail2WP {
 
 
     /**
-     * Inspect request for things we need to check for early.
+     * Enforce feed and author-enumeration settings.
      *
      * @since 1.0.0
      */
@@ -4241,12 +4255,12 @@ class Fail2WP {
         }
         // Check for user enumeration
         if ( isset( $wp->query_vars['author'] ) ) {
-            // See if we should block it
+            // Apply author-enumeration blocking.
             if ( $this->fail2wp_block_user_enum ) {
-                // And if so, we unset it to pretend it was never there
+                // Remove the author query.
                 unset( $wp->query_vars['author'] );
             }
-            // See if we should log it
+            // Log author-enumeration requests.
             if ( $this->fail2wp_log_user_enum ) {
                 $alert_message = $this->fail2wp_make_alert_message( '', '', FAIL2WP_ALERT_USER_ENUM );
                 if ( ! empty( $alert_message ) ) {
@@ -4259,7 +4273,7 @@ class Fail2WP {
 
 
     /**
-     * Possibly modify login errors in-transit.
+     * Apply configured login error messages.
      *
      * @since 1.0.0
      */
@@ -4336,9 +4350,7 @@ class Fail2WP {
     }
     */
     /**
-     * Activation of plugin.
-     *
-     * We don't really need to do anything at activation of the plugin
+     * Legacy activation placeholder.
      *
      * @since 1.0.0
      */
@@ -4347,9 +4359,7 @@ class Fail2WP {
     }
     */
     /**
-     * Deactivation of plugin.
-     *
-     * We don't really need to do anything at activation of the plugin
+     * Unused deactivation placeholder.
      *
      * @since 1.0.0
      */
@@ -4372,7 +4382,7 @@ class Fail2WP {
                                        false,
                                        dirname( plugin_basename( __FILE__ ) ) . '/languages' ) ) {
             /**
-             * We don't consider this to be a "real" error since 1.1.0
+             * Missing optional translations are nonfatal.
              */
             // error_log( 'Unable to load language file (' . dirname( plugin_basename( __FILE__ ) ) . '/languages' . ')' );
         }
@@ -4401,9 +4411,7 @@ class Fail2WP {
 
 
     /**
-     * Run plugin.
-     *
-     * Basically "enqueues" WordPress actions and lets WordPress do its thing.
+     * Register plugin hooks and initialize storage.
      *
      * @since 1.0.0
      */
@@ -4413,7 +4421,7 @@ class Fail2WP {
         }
         Fail2WP_IP_Blocking_Storage::maybe_install();
 
-        // Setup i18n. We use the 'init' action rather than 'plugins_loaded' as per
+        // Load translations on init.
         // https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#user-contributed-notes
         add_action( 'init',  [$this, 'setup_locale'] );
         add_action( 'init',  [$this, 'fail2wp_ip_blocking_enforce'], 0 );
@@ -4448,7 +4456,7 @@ class Fail2WP {
 
         // add_action( 'wp',                  [$this, 'fail2wp_wp_main']              );
         // add_action( 'pre_get_posts',       [$this, 'fail2wp_pgp']                  );
-        // Plugin deactivation, not needed atm :-)
+        // Unused deactivation hook.
         // register_deactivation_hook( __FILE__, [$this, 'fail2wp_deactivate_plugin'] );
         if ( defined( 'FAIL2WP_FLOW_DEBUG' ) && FAIL2WP_FLOW_DEBUG ) {
             error_log( basename(__FILE__) . ' ' . __FUNCTION__ . ': {exit}' );

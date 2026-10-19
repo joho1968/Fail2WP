@@ -2,22 +2,21 @@
 Contributors: joho68, webbplatsen
 Donate link: https://code.webbplatsen.net/wordpress/fail2wp/
 Tags: fail2ban, authentication, security, admin, firewall
-Requires at least: 5.4.0
-Tested up to: 7.0
+Requires at least: 6.2
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Security plugin for WordPress with support for fail2ban. Tested with WordPress 5.5+ and PHP 7.4-8.4
+WordPress security plugin. Requires WordPress 6.2+ and PHP 7.4+.
 
 == Description ==
 
-This WordPress plugin provides security functionality and integration with fail2ban.
+* Adds security controls to WordPress.
+* fail2ban integration is optional.
 
-It does not require fail2ban to function.
-
-Basic security functionality includes:
+Security features:
 
 * Disabling login with username (require e-mail address)
 * Allow/Deny login from IP address, hostname (including wildcard support)
@@ -35,39 +34,89 @@ Basic security functionality includes:
 * Partially or fully disable XMLRPC access
 * Monitoring administrator accounts for unexpected role/account changes
 
-The plugin also plays nicely with Fail2ban, which is an advanced way of blocking IP addresses dynamically upon suspicious behavior.
+* fail2ban can dynamically block IP addresses after suspicious activity.
 
 Other notes:
 
-* This plugin **may** work with earlier versions of WordPress
-* This plugin has been tested with **WordPress 5.5-7.0.x** at the time of this writing
-* This plugin has been tested with **PHP 7.4, 8.1, 8.2, and 8.3** at the time of this writing
-* Local syntax/runtime compatibility checks have also been run on **PHP 8.4**
-* This plugin optionally makes use of `mb_` PHP functions
-* This plugin may create entries in your PHP error log (if active)
-* This plugin contains no Javascript
-* This plugin contains no tracking code and does not store any information about users
+* Requires WordPress 6.2+ and PHP 7.4+.
+* PHP compatibility checks: 7.4, 8.1, 8.2, 8.3, and 8.4.
+* Uses `mb_` PHP functions when available.
+* May write to the PHP error log when logging is enabled.
+* Contains no JavaScript or tracking code.
+* Optional IP blocking stores IP addresses and security-event timestamps. Administrator monitoring stores administrator IDs and login names.
+
+Reverse proxy configuration:
+
+* Available since 1.4.0.
+* Setting: FAIL2WP_TRUSTED_PROXIES in wp-config.php, before wp-settings.php loads.
+* Value: array of proxy IPv4/IPv6 addresses or CIDRs.
+
+    define( 'FAIL2WP_TRUSTED_PROXIES', [ '192.0.2.10', '2001:db8:1234::/48' ] );
+
+* Replace the examples with your actual proxy addresses.
+* List directly connected proxy peers, identified by REMOTE_ADDR.
+* Hostnames and wildcards: unsupported for this constant.
+* Undefined or empty array: X-Real-IP ignored.
+* Accepted header: one valid IP from a listed proxy.
+* Missing or invalid header: peer address used.
+* Proxy requirement: overwrite client-supplied X-Real-IP.
+* Multiple proxy hops: final proxy supplies the verified visitor IP.
+* X-Forwarded-For and address chains: unsupported.
+* Proxy trust does not bypass login restrictions or IP bans.
+* Scope: entire WordPress installation; excluded from settings exports.
+* Server already supplies a verified REMOTE_ADDR: usually no constant needed.
+* Cloudflare: enabled setting, matching source range, valid CF-Connecting-IP; takes precedence.
+* Upgrade: configure trusted proxies before updating an existing X-Real-IP deployment.
+* Verify client addresses and login access on staging.
+* Login/bypass hostname wildcards: separate feature; forward-confirmed reverse DNS required.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
-
-1. Upload the contents of the `fail2wp` folder to the `/wp-content/plugins/` directory
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Configure the basic settings
-4. To enable fail2ban integration, you will need to modify your fail2ban configuration. Please see `FAIL2BAN.txt` or `FAIL2BAN.md`.
+1. Upload the `fail2wp` folder to `/wp-content/plugins/`.
+2. Activate Fail2WP from the Plugins menu.
+3. Configure the basic settings.
+4. For fail2ban integration, follow `FAIL2BAN.txt` or `FAIL2BAN.md`.
 
 == Frequently Asked Questions ==
 
 = Is the plugin locale aware =
 
-Fail2WP uses standard WordPress functionality to handle localization/locale. The native language localization of the plugin is English. It has been translated to Swedish by the author.
+* Uses WordPress localization functions.
+* Default language: English.
+* Swedish translation by the author.
 
 = Are there any incompatibilities =
 
-This is a hard question to answer. There are no known incompatibilities.
+* No known incompatibilities.
 
 == Changelog ==
+
+= 1.4.0 =
+
+* Fixed client-IP spoofing through X-Real-IP.
+* Added FAIL2WP_TRUSTED_PROXIES for proxy IPs and CIDRs.
+* Enforced Login IP rules before login processing.
+* Extended REST blocks to child routes, trailing slashes, and case variants.
+* Preserved REST discovery for authenticated and bypassed clients.
+* Required forward-confirmed reverse DNS for hostname wildcards.
+* Fixed hostname results on the first DNS lookup.
+* Removed control characters from security log records.
+* Restricted imports to registered settings; validated imported values.
+* Escaped ignored import names.
+* Fixed Cloudflare enablement and DNS-cache exports.
+* Connected Login IP deny events to local ban accounting.
+* Updated compatibility metadata for WordPress 7.1.
+* Added security and WordPress regression checks.
+* Documented fail2ban 1.0.x use with Fail2WP 1.3.0.
+* Added explicit validation for checkbox values and role selections.
+* Retained previous settings on invalid input; added validation notices.
+* Preserved JSON settings during repeated sanitization.
+* Removed duplicate translation calls from role renderers.
+* Raised the minimum WordPress version to 6.2.
+* Prepared IP-blocking table names with identifier placeholders.
+* Rejected malformed settings exports before import.
+* Escaped disabled-feed text and links; validated XML-RPC charset output.
+* Removed a duplicate import nonce field.
 
 = 1.3.0 =
 * Added optional built-in IP blocking with configurable event threshold, observation window, and ban duration
@@ -75,19 +124,19 @@ This is a hard question to answer. There are no known incompatibilities.
 * Added active-ban management and exact-IP bypass entries in wp-admin
 * Added import/export support for IP-blocking configuration and validated active-ban snapshots
 * Added manual exact-IP ban creation and expanded trusted bypass entries to support IPs, CIDR ranges, hostnames, and hostname wildcards
-* Added administrator-account monitoring with immediate WordPress-hook checks, hourly WP-Cron reconciliation, a reviewed baseline, and syslog alerts for differences
-* Added a persistent-object-cache notice; the feature works without one but performs database lookups for uncached ban checks
+* Added administrator baseline monitoring, immediate hook checks, hourly reconciliation, and syslog alerts
+* Added a missing-object-cache notice; uncached ban checks use the database
 
 = 1.2.6 =
-* Fixed a nasty REST API regression that could log `Blocked REST API request` even when the REST block settings were not enabled
-* Fixed the same regression so ordinary unauthenticated REST namespace requests are no longer treated as blocked just because user enumeration protection is active
-* Fixed blocked REST API logging so it now respects the "Log blocked requests" setting consistently
+* Fixed false REST block logs when REST blocking was disabled
+* Fixed false REST namespace blocks with user-enumeration handling active
+* Made blocked REST logs respect the "Log blocked requests" setting
 * Verified with WordPress 6.9
 * Updated internal version metadata
 
 = 1.2.5 =
-* Added an admin-side helper to fetch current Cloudflare IPv4 and IPv6 ranges into the settings form without auto-saving
-* Improved the Cloudflare tab UX so the ranges and refresh controls stay available but are visually muted when Cloudflare support is disabled
+* Added Cloudflare IPv4/IPv6 range refresh in wp-admin; changes require Save Changes
+* Muted disabled Cloudflare range controls; editing and refresh remain available
 * Changed disabled feed requests to return `404` instead of redirecting to the home page
 * Extended user enumeration blocking/logging to cover unauthenticated REST users endpoints
 * Fixed the REST `users` route block so it also covers individual user endpoints
@@ -110,7 +159,7 @@ This is a hard question to answer. There are no known incompatibilities.
 * Verified with Plugin Check (PCP)
 * Fixed issue when requiring REST API authentication and IPv4/IPv6 bypass was configured
 * Fixed issue with uninitialized variable in XML-RPC handling
-* Fixed PHP warning for json_decode() call, this did not impact functionality
+* Fixed a json_decode() warning without changing behavior
 * Corrected some Swedish translations
 * Corrected some checks for `uninstall.php` and made it more WP-CLI compatible
 
@@ -154,6 +203,13 @@ This is a hard question to answer. There are no known incompatibilities.
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+
+* Requires WordPress 6.2+.
+* Before upgrading: set FAIL2WP_TRUSTED_PROXIES or supply a verified REMOTE_ADDR.
+* Proxies must overwrite client-supplied X-Real-IP.
+* Hostname wildcards require forward-confirmed reverse DNS.
 
 = 1.3.0 =
 * Configure IP blocking only after adding any trusted administrative IP addresses to the bypass list.

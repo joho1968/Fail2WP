@@ -1,4 +1,5 @@
 <?php
+if ( PHP_SAPI !== 'cli' ) { exit; }
 /**
  * Compare the Fail2WP CIDR adapter with the bundled implementation.
  */

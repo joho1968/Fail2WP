@@ -1,7 +1,7 @@
 <?php
 /**
  * Fail2WP IP blocking database storage.
- * This class owns the schema lifecycle and database-backed active-ban state.
+ * Schema, event counters, active bans, and cache invalidation.
  *
  * @since      1.3.0
  * @package    Fail2WP
@@ -115,8 +115,8 @@ class Fail2WP_IP_Blocking_Storage {
         $ban_table = self::get_ban_table_name();
         $event_table = self::get_event_table_name();
 
-        $wpdb->query( $wpdb->prepare( "DELETE FROM $ban_table WHERE expires_at <= %s", $now ) );
-        $wpdb->query( $wpdb->prepare( "DELETE FROM $event_table WHERE last_seen_at <= %s", $counter_cutoff ) );
+        $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE expires_at <= %s', $ban_table, $now ) );
+        $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE last_seen_at <= %s', $event_table, $counter_cutoff ) );
     }
 
     /**
@@ -135,23 +135,27 @@ class Fail2WP_IP_Blocking_Storage {
         $window_start = gmdate( 'Y-m-d H:i:s', time() - $window_seconds );
         $event_table = self::get_event_table_name();
         $ban_table = self::get_ban_table_name();
-        $sql = "INSERT INTO $event_table (ip, first_seen_at, last_seen_at, hit_count)
+        $wpdb->query( $wpdb->prepare(
+            'INSERT INTO %i (ip, first_seen_at, last_seen_at, hit_count)
                 VALUES (%s, %s, %s, 1)
                 ON DUPLICATE KEY UPDATE
                 hit_count = IF(first_seen_at < %s, 1, hit_count + 1),
                 first_seen_at = IF(first_seen_at < %s, VALUES(first_seen_at), first_seen_at),
-                last_seen_at = VALUES(last_seen_at)";
-        $wpdb->query( $wpdb->prepare( $sql, $ip, $now, $now, $window_start, $window_start ) );
-        $count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT hit_count FROM $event_table WHERE ip = %s", $ip ) );
+                last_seen_at = VALUES(last_seen_at)',
+            $event_table, $ip, $now, $now, $window_start, $window_start
+        ) );
+        $count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT hit_count FROM %i WHERE ip = %s', $event_table, $ip ) );
         if ( $count < $threshold ) {
             return( false );
         }
 
         $expires_at = gmdate( 'Y-m-d H:i:s', time() + $ban_seconds );
-        $ban_sql = "INSERT INTO $ban_table (ip, created_at, expires_at, hit_count)
+        $wpdb->query( $wpdb->prepare(
+            'INSERT INTO %i (ip, created_at, expires_at, hit_count)
                     VALUES (%s, %s, %s, %d)
-                    ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at), hit_count = VALUES(hit_count)";
-        $wpdb->query( $wpdb->prepare( $ban_sql, $ip, $now, $expires_at, $count ) );
+                    ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at), hit_count = VALUES(hit_count)',
+            $ban_table, $ip, $now, $expires_at, $count
+        ) );
         self::delete_cached_ban( $ip );
         return( true );
     }
@@ -176,7 +180,7 @@ class Fail2WP_IP_Blocking_Storage {
 
         $ban_table = self::get_ban_table_name();
         $now = gmdate( 'Y-m-d H:i:s' );
-        $expires_at = $wpdb->get_var( $wpdb->prepare( "SELECT expires_at FROM $ban_table WHERE ip = %s AND expires_at > %s", $ip, $now ) );
+        $expires_at = $wpdb->get_var( $wpdb->prepare( 'SELECT expires_at FROM %i WHERE ip = %s AND expires_at > %s', $ban_table, $ip, $now ) );
         if ( empty( $expires_at ) ) {
             return( false );
         }
@@ -206,7 +210,7 @@ class Fail2WP_IP_Blocking_Storage {
         $ban_table = self::get_ban_table_name();
         $now = gmdate( 'Y-m-d H:i:s' );
         $bans = $wpdb->get_results(
-            $wpdb->prepare( "SELECT ip, created_at, expires_at, hit_count FROM $ban_table WHERE expires_at > %s ORDER BY expires_at ASC, ip ASC", $now ),
+            $wpdb->prepare( 'SELECT ip, created_at, expires_at, hit_count FROM %i WHERE expires_at > %s ORDER BY expires_at ASC, ip ASC', $ban_table, $now ),
             ARRAY_A
         );
         return( is_array( $bans ) ? $bans : array() );
@@ -225,7 +229,7 @@ class Fail2WP_IP_Blocking_Storage {
         global $wpdb;
 
         $ban_table = self::get_ban_table_name();
-        $deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM $ban_table WHERE ip = %s", $ip ) );
+        $deleted = $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE ip = %s', $ban_table, $ip ) );
         self::delete_cached_ban( $ip );
         return( $deleted !== false );
     }
@@ -245,10 +249,12 @@ class Fail2WP_IP_Blocking_Storage {
         $now = gmdate( 'Y-m-d H:i:s' );
         $expires_at = gmdate( 'Y-m-d H:i:s', time() + $ban_seconds );
         $ban_table = self::get_ban_table_name();
-        $sql = "INSERT INTO $ban_table (ip, created_at, expires_at, hit_count)
+        $result = $wpdb->query( $wpdb->prepare(
+            'INSERT INTO %i (ip, created_at, expires_at, hit_count)
                 VALUES (%s, %s, %s, 0)
-                ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at)";
-        $result = $wpdb->query( $wpdb->prepare( $sql, $ip, $now, $expires_at ) );
+                ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at)',
+            $ban_table, $ip, $now, $expires_at
+        ) );
         self::delete_cached_ban( $ip );
         return( $result !== false );
     }
@@ -262,8 +268,8 @@ class Fail2WP_IP_Blocking_Storage {
         global $wpdb;
 
         $ban_table = self::get_ban_table_name();
-        $ips = $wpdb->get_col( "SELECT ip FROM $ban_table" );
-        $deleted = $wpdb->query( "DELETE FROM $ban_table" );
+        $ips = $wpdb->get_col( $wpdb->prepare( 'SELECT ip FROM %i', $ban_table ) );
+        $deleted = $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $ban_table ) );
         if ( is_array( $ips ) ) {
             foreach ( $ips as $ip ) {
                 self::delete_cached_ban( $ip );
@@ -273,9 +279,8 @@ class Fail2WP_IP_Blocking_Storage {
     }
 
     /**
-     * Replace active bans from an administrator-provided export snapshot.
-     * Invalid, expired, and non-exact-IP entries are rejected before storage is
-     * changed so a malformed import cannot clear an existing ban set.
+     * Replace active bans from a validated administrator import.
+     * Reject invalid entries before changing stored bans.
      *
      * @since 1.3.0
      */
@@ -287,11 +292,21 @@ class Fail2WP_IP_Blocking_Storage {
             if ( ! is_array( $ban ) || empty( $ban['ip'] ) || empty( $ban['created_at'] ) || empty( $ban['expires_at'] ) ) {
                 return( false );
             }
-            $ip = (string) $ban['ip'];
-            $created_at = strtotime( (string) $ban['created_at'] . ' UTC' );
-            $expires_at = strtotime( (string) $ban['expires_at'] . ' UTC' );
-            $hit_count = isset( $ban['hit_count'] ) ? (int) $ban['hit_count'] : 0;
-            if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) || isset( $seen_ips[$ip] ) || $created_at === false || $expires_at === false || $expires_at <= $now || $created_at > $expires_at || $hit_count < 0 ) {
+            if ( ! is_string( $ban['ip'] ) || ! is_string( $ban['created_at'] ) || ! is_string( $ban['expires_at'] ) ) {
+                return( false );
+            }
+            $ip = $ban['ip'];
+            $created_at = strtotime( $ban['created_at'] . ' UTC' );
+            $expires_at = strtotime( $ban['expires_at'] . ' UTC' );
+            $raw_hit_count = isset( $ban['hit_count'] ) ? $ban['hit_count'] : 0;
+            if ( ! is_int( $raw_hit_count ) && ! is_string( $raw_hit_count ) ) {
+                return( false );
+            }
+            $hit_count = filter_var( $raw_hit_count, FILTER_VALIDATE_INT, array( 'options' => array( 'min_range' => 0 ) ) );
+            if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) || isset( $seen_ips[$ip] ) || $created_at === false || $expires_at === false || $expires_at <= $now || $created_at > $expires_at || $hit_count === false ) {
+                return( false );
+            }
+            if ( gmdate( 'Y-m-d H:i:s', $created_at ) !== $ban['created_at'] || gmdate( 'Y-m-d H:i:s', $expires_at ) !== $ban['expires_at'] ) {
                 return( false );
             }
             $seen_ips[$ip] = true;
@@ -311,8 +326,10 @@ class Fail2WP_IP_Blocking_Storage {
 
         $ban_table = self::get_ban_table_name();
         foreach ( $normalized as $ban ) {
-            $sql = "INSERT INTO $ban_table (ip, created_at, expires_at, hit_count) VALUES (%s, %s, %s, %d)";
-            if ( $wpdb->query( $wpdb->prepare( $sql, $ban['ip'], $ban['created_at'], $ban['expires_at'], $ban['hit_count'] ) ) === false ) {
+            if ( $wpdb->query( $wpdb->prepare(
+                'INSERT INTO %i (ip, created_at, expires_at, hit_count) VALUES (%s, %s, %s, %d)',
+                $ban_table, $ban['ip'], $ban['created_at'], $ban['expires_at'], $ban['hit_count']
+            ) ) === false ) {
                 return( false );
             }
         }
@@ -327,8 +344,8 @@ class Fail2WP_IP_Blocking_Storage {
     public static function uninstall() {
         global $wpdb;
 
-        $wpdb->query( 'DROP TABLE IF EXISTS ' . self::get_event_table_name() );
-        $wpdb->query( 'DROP TABLE IF EXISTS ' . self::get_ban_table_name() );
+        $wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', self::get_event_table_name() ) );
+        $wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', self::get_ban_table_name() ) );
         delete_option( self::DB_VERSION_OPTION );
     }
 }

@@ -53,8 +53,6 @@ if ( ! defined( 'FAIL2WP_WORDPRESS_PLUGIN' ) ) {
 /**
  * Remove all settings from WordPress database.
  *
- * This can, possibly, be used by more than one module.
- *
  * @since 1.1.0
  */
 function fail2wp_misc_delete_all_settings() {

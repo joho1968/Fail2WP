@@ -42,7 +42,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 /**
- * We don't check these anymore.
+ * Legacy uninstall checks; retained for reference.
  * https://developer.wordpress.org/plugins/plugin-basics/uninstall-methods/
  */
 
@@ -61,7 +61,7 @@ if ( empty( $_REQUEST['slug'] ) || $_REQUEST['slug'] !== 'fail2wp' ) {
     }
     exit;
 }
-// If we shouldn't do this, then exit
+// Legacy capability check.
 if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'delete_plugins' ) ) {
     if ( defined( 'FAIL2WP_UNINSTALL_TRACE' ) ) {
         error_log( 'fail2wp-uninstall: User is not allowed to manage/uninstall plugins' );

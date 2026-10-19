@@ -1,4 +1,5 @@
 <?php
+if ( PHP_SAPI !== 'cli' ) { exit; }
 /**
  * Lightweight regression coverage for IP-blocking storage and cache handling.
  *
@@ -32,14 +33,20 @@ class Fail2WP_Test_WPDB {
     public function prepare( $query ) {
         $arguments = func_get_args();
         array_shift( $arguments );
-        foreach ( $arguments as $argument ) {
-            $replacement = is_int( $argument ) ? (string) $argument : "'" . addslashes( $argument ) . "'";
-            $query = preg_replace( '/%[sd]/', $replacement, $query, 1 );
-        }
+        $query = preg_replace_callback( '/%[isd]/', static function ( $match ) use ( &$arguments ) {
+            $argument = array_shift( $arguments );
+            if ( $match[0] === '%i' ) {
+                return( '`' . str_replace( '`', '``', $argument ) . '`' );
+            }
+            if ( $match[0] === '%d' ) {
+                return( (string) (int) $argument );
+            }
+            return( "'" . addslashes( $argument ) . "'" );
+        }, $query );
         return( $query );
     }
     public function query( $query ) {
-        if ( strpos( $query, 'INSERT INTO wp_fail2wp_ip_block_events' ) !== false ) {
+        if ( strpos( $query, 'INSERT INTO `wp_fail2wp_ip_block_events`' ) !== false ) {
             preg_match( "/VALUES \('([^']+)'/", $query, $matches );
             $ip = $matches[1];
             if ( ! isset( $this->events[$ip] ) ) {
@@ -48,7 +55,7 @@ class Fail2WP_Test_WPDB {
             $this->events[$ip]++;
             return( 1 );
         }
-        if ( strpos( $query, 'INSERT INTO wp_fail2wp_ip_blocks' ) !== false ) {
+        if ( strpos( $query, 'INSERT INTO `wp_fail2wp_ip_blocks`' ) !== false ) {
             preg_match( "/VALUES \('([^']+)', '([^']+)', '([^']+)', (\d+)\)/", $query, $matches );
             $this->bans[$matches[1]] = array(
                 'ip'         => $matches[1],
@@ -58,23 +65,23 @@ class Fail2WP_Test_WPDB {
             );
             return( 1 );
         }
-        if ( strpos( $query, 'DELETE FROM wp_fail2wp_ip_blocks WHERE ip' ) !== false ) {
+        if ( strpos( $query, 'DELETE FROM `wp_fail2wp_ip_blocks` WHERE ip' ) !== false ) {
             preg_match( "/ip = '([^']+)'/", $query, $matches );
             unset( $this->bans[$matches[1]] );
             return( 1 );
         }
-        if ( trim( $query ) === 'DELETE FROM wp_fail2wp_ip_blocks' ) {
+        if ( trim( $query ) === 'DELETE FROM `wp_fail2wp_ip_blocks`' ) {
             $this->bans = array();
             return( 1 );
         }
         return( 1 );
     }
     public function get_var( $query ) {
-        if ( strpos( $query, 'SELECT hit_count FROM wp_fail2wp_ip_block_events' ) !== false ) {
+        if ( strpos( $query, 'SELECT hit_count FROM `wp_fail2wp_ip_block_events`' ) !== false ) {
             preg_match( "/ip = '([^']+)'/", $query, $matches );
             return( isset( $this->events[$matches[1]] ) ? $this->events[$matches[1]] : null );
         }
-        if ( strpos( $query, 'SELECT expires_at FROM wp_fail2wp_ip_blocks' ) !== false ) {
+        if ( strpos( $query, 'SELECT expires_at FROM `wp_fail2wp_ip_blocks`' ) !== false ) {
             $this->ban_lookup_queries++;
             preg_match( "/ip = '([^']+)'/", $query, $matches );
             return( isset( $this->bans[$matches[1]] ) ? $this->bans[$matches[1]]['expires_at'] : null );
@@ -139,6 +146,21 @@ if ( Fail2WP_IP_Blocking_Storage::replace_active_bans( array( array( 'ip' => 'in
 }
 if ( Fail2WP_IP_Blocking_Storage::replace_active_bans( array( $snapshot[0], $snapshot[0] ) ) || ! Fail2WP_IP_Blocking_Storage::is_banned( '2001:db8::7' ) ) {
     throw new RuntimeException( 'Duplicate snapshot changed active bans.' );
+}
+foreach ( array(
+    array( 'ip', array( '2001:db8::8' ) ),
+    array( 'created_at', array( 'invalid' ) ),
+    array( 'expires_at', 'tomorrow' ),
+    array( 'hit_count', 'not-a-number' ),
+    array( 'hit_count', 1.5 ),
+    array( 'hit_count', true ),
+    array( 'hit_count', -1 ),
+) as $invalid_field ) {
+    $invalid_ban = $snapshot[0];
+    $invalid_ban[$invalid_field[0]] = $invalid_field[1];
+    if ( Fail2WP_IP_Blocking_Storage::replace_active_bans( array( $invalid_ban ) ) || ! Fail2WP_IP_Blocking_Storage::is_banned( '2001:db8::7' ) ) {
+        throw new RuntimeException( 'Malformed ' . $invalid_field[0] . ' changed active bans.' );
+    }
 }
 
 echo "IP-blocking storage regression checks passed\n";

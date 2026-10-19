@@ -7,7 +7,7 @@
  * @subpackage fail2wp/includes
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
- * fail2wp_misc.inc.php
+ * class-fail2wp-admin-user-monitor.php
  * Copyright (C) 2021-2026 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *

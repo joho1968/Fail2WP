@@ -1,15 +1,14 @@
 <?php
 /**
  * Fail2WP CIDR matcher adapter.
- * Keeps the bundled matcher behind a Fail2WP-owned API so new features do not
- * depend directly on the third-party class.
+ * Wraps the bundled CIDR matcher.
  *
  * @since      1.3.0
  * @package    Fail2WP
  * @subpackage fail2wp/includes
  * @author     Joaquim Homrighausen <joho@webbplatsen.se>
  *
- * fail2wp_misc.inc.php
+ * class-fail2wp-cidr-matcher.php
  * Copyright (C) 2021-2026 Joaquim Homrighausen; all rights reserved.
  * Development sponsored by WebbPlatsen i Sverige AB, www.webbplatsen.se
  *

@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: fail2wp 1.3.0\n"
+"Project-Id-Version: fail2wp 1.4.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-23 17:01+0200\n"
+"POT-Creation-Date: 2026-10-16 12:07+0200\n"
 "PO-Revision-Date: 2026-06-23 17:05+0200\n"
 "Last-Translator: Joaquim Homrighausen <joho@webbplatsen.se>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -289,7 +289,8 @@ msgstr ""
 msgid "Plugin that provides uncomplicated map functionality"
 msgstr ""
 
-#: fail2wp/fail2wp.php:2125
+#. translators: %s: Invalid bypass entries, separated by commas.
+#: fail2wp/fail2wp.php:2209
 #, php-format
 msgid ""
 "The following bypass entries were not saved because they are invalid: %s"
@@ -756,7 +757,8 @@ msgstr ""
 msgid "Unable to verify the administrator-monitor request."
 msgstr ""
 
-#: fail2wp/fail2wp.php:2773
+#. translators: %d: Number of administrator accounts.
+#: fail2wp/fail2wp.php:2861
 #, php-format
 msgid "Administrator baseline updated with %d account(s)."
 msgstr ""
@@ -1087,4 +1089,12 @@ msgstr ""
 
 #: fail2wp/includes/trait-fail2wp-settings.php:175
 msgid "Refresh Cloudflare IPs"
+msgstr ""
+
+#: fail2wp/fail2wp.php:1956
+msgid "Invalid on/off value. Previous setting retained."
+msgstr ""
+
+#: fail2wp/fail2wp.php:1971 fail2wp/fail2wp.php:1994
+msgid "Invalid role selection. Previous setting retained."
 msgstr ""

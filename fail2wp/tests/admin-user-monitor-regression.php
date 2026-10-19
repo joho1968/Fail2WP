@@ -1,4 +1,5 @@
 <?php
+if ( PHP_SAPI !== 'cli' ) { exit; }
 /**
  * Regression coverage for administrator-monitor snapshot comparison.
  */
