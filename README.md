@@ -96,10 +96,6 @@ define( 'FAIL2WP_TRUSTED_PROXIES', [ '192.0.2.10', '2001:db8:1234::/48' ] );
 
 ## Changelog
 
-- Copyable release notes: [CHANGELOG.md](CHANGELOG.md).
-- Release preparation and parity checks: [RELEASE.md](RELEASE.md).
-- WordPress/SVN release source: `fail2wp/README.txt`.
-
 ### 1.4.0
 
 * Fixed client-IP spoofing through X-Real-IP.
